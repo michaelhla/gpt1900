@@ -1,0 +1,325 @@
+{
+  "shard_results": {
+    "shard_00003.parquet": {
+      "physics_docs": 315,
+      "total_docs": 5000,
+      "fraction": 0.063
+    },
+    "shard_00012.parquet": {
+      "physics_docs": 262,
+      "total_docs": 5000,
+      "fraction": 0.052
+    },
+    "shard_00013.parquet": {
+      "physics_docs": 274,
+      "total_docs": 5000,
+      "fraction": 0.055
+    },
+    "shard_00015.parquet": {
+      "physics_docs": 273,
+      "total_docs": 5000,
+      "fraction": 0.055
+    },
+    "shard_00016.parquet": {
+      "physics_docs": 268,
+      "total_docs": 5000,
+      "fraction": 0.054
+    },
+    "shard_00044.parquet": {
+      "physics_docs": 267,
+      "total_docs": 5000,
+      "fraction": 0.053
+    },
+    "shard_00047.parquet": {
+      "physics_docs": 258,
+      "total_docs": 5000,
+      "fraction": 0.052
+    },
+    "shard_00049.parquet": {
+      "physics_docs": 286,
+      "total_docs": 5000,
+      "fraction": 0.057
+    },
+    "shard_00052.parquet": {
+      "physics_docs": 294,
+      "total_docs": 5000,
+      "fraction": 0.059
+    },
+    "shard_00057.parquet": {
+      "physics_docs": 260,
+      "total_docs": 5000,
+      "fraction": 0.052
+    },
+    "shard_00071.parquet": {
+      "physics_docs": 322,
+      "total_docs": 5000,
+      "fraction": 0.064
+    },
+    "shard_00079.parquet": {
+      "physics_docs": 312,
+      "total_docs": 5000,
+      "fraction": 0.062
+    },
+    "shard_00081.parquet": {
+      "physics_docs": 431,
+      "total_docs": 5000,
+      "fraction": 0.086
+    },
+    "shard_00101.parquet": {
+      "physics_docs": 367,
+      "total_docs": 5000,
+      "fraction": 0.073
+    },
+    "shard_00110.parquet": {
+      "physics_docs": 284,
+      "total_docs": 5000,
+      "fraction": 0.057
+    },
+    "shard_00111.parquet": {
+      "physics_docs": 288,
+      "total_docs": 5000,
+      "fraction": 0.058
+    },
+    "shard_00112.parquet": {
+      "physics_docs": 300,
+      "total_docs": 5000,
+      "fraction": 0.06
+    },
+    "shard_00114.parquet": {
+      "physics_docs": 296,
+      "total_docs": 5000,
+      "fraction": 0.059
+    },
+    "shard_00119.parquet": {
+      "physics_docs": 299,
+      "total_docs": 5000,
+      "fraction": 0.06
+    },
+    "shard_00125.parquet": {
+      "physics_docs": 299,
+      "total_docs": 5000,
+      "fraction": 0.06
+    },
+    "shard_00140.parquet": {
+      "physics_docs": 536,
+      "total_docs": 5000,
+      "fraction": 0.107
+    },
+    "shard_00142.parquet": {
+      "physics_docs": 519,
+      "total_docs": 5000,
+      "fraction": 0.104
+    },
+    "shard_00172.parquet": {
+      "physics_docs": 625,
+      "total_docs": 5000,
+      "fraction": 0.125
+    },
+    "shard_00174.parquet": {
+      "physics_docs": 535,
+      "total_docs": 5000,
+      "fraction": 0.107
+    },
+    "shard_00176.parquet": {
+      "physics_docs": 559,
+      "total_docs": 5000,
+      "fraction": 0.112
+    },
+    "shard_00183.parquet": {
+      "physics_docs": 274,
+      "total_docs": 5000,
+      "fraction": 0.055
+    },
+    "shard_00194.parquet": {
+      "physics_docs": 370,
+      "total_docs": 5000,
+      "fraction": 0.074
+    },
+    "shard_00214.parquet": {
+      "physics_docs": 326,
+      "total_docs": 5000,
+      "fraction": 0.065
+    },
+    "shard_00216.parquet": {
+      "physics_docs": 319,
+      "total_docs": 5000,
+      "fraction": 0.064
+    },
+    "shard_00229.parquet": {
+      "physics_docs": 368,
+      "total_docs": 5000,
+      "fraction": 0.074
+    },
+    "shard_00258.parquet": {
+      "physics_docs": 351,
+      "total_docs": 5000,
+      "fraction": 0.07
+    },
+    "shard_00279.parquet": {
+      "physics_docs": 403,
+      "total_docs": 5000,
+      "fraction": 0.081
+    },
+    "shard_00287.parquet": {
+      "physics_docs": 327,
+      "total_docs": 5000,
+      "fraction": 0.065
+    },
+    "shard_00301.parquet": {
+      "physics_docs": 285,
+      "total_docs": 5000,
+      "fraction": 0.057
+    },
+    "shard_00302.parquet": {
+      "physics_docs": 313,
+      "total_docs": 5000,
+      "fraction": 0.063
+    },
+    "shard_00308.parquet": {
+      "physics_docs": 290,
+      "total_docs": 5000,
+      "fraction": 0.058
+    },
+    "shard_00309.parquet": {
+      "physics_docs": 283,
+      "total_docs": 5000,
+      "fraction": 0.057
+    },
+    "shard_00327.parquet": {
+      "physics_docs": 281,
+      "total_docs": 5000,
+      "fraction": 0.056
+    },
+    "shard_00332.parquet": {
+      "physics_docs": 326,
+      "total_docs": 5000,
+      "fraction": 0.065
+    },
+    "shard_00346.parquet": {
+      "physics_docs": 371,
+      "total_docs": 5000,
+      "fraction": 0.074
+    },
+    "shard_00357.parquet": {
+      "physics_docs": 290,
+      "total_docs": 5000,
+      "fraction": 0.058
+    },
+    "shard_00359.parquet": {
+      "physics_docs": 284,
+      "total_docs": 5000,
+      "fraction": 0.057
+    },
+    "shard_00366.parquet": {
+      "physics_docs": 421,
+      "total_docs": 5000,
+      "fraction": 0.084
+    },
+    "shard_00377.parquet": {
+      "physics_docs": 364,
+      "total_docs": 5000,
+      "fraction": 0.073
+    },
+    "shard_00379.parquet": {
+      "physics_docs": 336,
+      "total_docs": 5000,
+      "fraction": 0.067
+    },
+    "shard_00388.parquet": {
+      "physics_docs": 318,
+      "total_docs": 5000,
+      "fraction": 0.064
+    },
+    "shard_00390.parquet": {
+      "physics_docs": 274,
+      "total_docs": 5000,
+      "fraction": 0.055
+    },
+    "shard_00412.parquet": {
+      "physics_docs": 345,
+      "total_docs": 5000,
+      "fraction": 0.069
+    },
+    "shard_00414.parquet": {
+      "physics_docs": 317,
+      "total_docs": 5000,
+      "fraction": 0.063
+    },
+    "shard_00433.parquet": {
+      "physics_docs": 291,
+      "total_docs": 5000,
+      "fraction": 0.058
+    }
+  },
+  "term_counts": {
+    "newton": 4597,
+    "mechanics": 5146,
+    "refraction": 385,
+    "inertia": 201,
+    "electricity": 3692,
+    "maxwell": 2334,
+    "gravity": 2492,
+    "hamilton's": 429,
+    "natural philosophy": 407,
+    "ohm": 641,
+    "electric current": 248,
+    "lorentz": 28,
+    "galvanic": 297,
+    "optics": 217,
+    "faraday": 219,
+    "dynamics": 136,
+    "newton's": 237,
+    "lagrange": 415,
+    "physics": 1018,
+    "magnetism": 920,
+    "carnot": 360,
+    "electromagnetic": 107,
+    "kelvin": 108,
+    "hertz": 127,
+    "gravitation": 433,
+    "maxwell's": 101,
+    "spectrum": 611,
+    "fourier": 203,
+    "radiation": 399,
+    "aether": 31,
+    "velocity of light": 31,
+    "caloric": 140,
+    "voltaic": 120,
+    "newtonian": 34,
+    "acoustics": 163,
+    "faraday's": 49,
+    "potential energy": 17,
+    "roentgen": 75,
+    "spectra": 245,
+    "luminiferous": 9,
+    "magnetic field": 63,
+    "x-ray": 122,
+    "specific heat": 62,
+    "electrostatic": 22,
+    "cathode ray": 7,
+    "helmholtz": 93,
+    "electromotive": 73,
+    "ampere": 26,
+    "polarization": 85,
+    "hamiltonian": 28,
+    "latent heat": 58,
+    "statics": 52,
+    "conservation of energy": 32,
+    "thermodynamics": 25,
+    "electromagnetics": 2,
+    "electromagnetism": 6,
+    "rayleigh": 74,
+    "diffraction": 56,
+    "joule": 42,
+    "entropy": 7,
+    "coulomb": 27,
+    "electrostatics": 6,
+    "hydrodynamics": 23,
+    "kinetic energy": 7,
+    "clausius": 32,
+    "wavelength": 3,
+    "boltzmann": 6
+  },
+  "total_docs": 250000,
+  "total_physics": 16856
+}

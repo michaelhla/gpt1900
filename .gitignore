@@ -4,6 +4,7 @@ __pycache__/
 dev-ignore/
 report.md
 eval_bundle/
+data/
 
 # Secrets
 .env
@@ -11,3 +12,5 @@ eval_bundle/
 # Local setup
 CLAUDE.md
 wandb/
+
+dask-*
