@@ -42,7 +42,13 @@ class CustomJSON(Task):
                     assert isinstance(messages, list), f"Expected list of messages, got {type(messages)}"
                     assert len(messages) >= 2, f"Conversation must have at least 2 messages, got {len(messages)}"
                     # Validate message structure and alternating roles
-                    for i, message in enumerate(messages):
+                    # Support optional system message at the start
+                    start_idx = 0
+                    if messages[0]["role"] == "system":
+                        assert "content" in messages[0], "System message missing 'content' field"
+                        assert isinstance(messages[0]["content"], str), "System message content must be a string"
+                        start_idx = 1
+                    for i, message in enumerate(messages[start_idx:]):
                         assert "role" in message, f"Message {i} missing 'role' field"
                         assert "content" in message, f"Message {i} missing 'content' field"
                         expected_role = "user" if i % 2 == 0 else "assistant"
