@@ -38,8 +38,8 @@ UPLOAD_CONFIGS = {
         "steps": [7226],
         "num_optim_ranks": 8,
         "desc": "GPT-1900 (D26, 8B tokens)",
-        "detail": "A 1.2B parameter GPT-style language model trained on ~8B tokens of pre-1900 English text.",
-        "params": "~1.2B", "layers": 26, "hidden_dim": 1664, "heads": 13, "val_bpb": "1.211",
+        "detail": "A 1.68B parameter GPT-style language model trained on ~8B tokens of pre-1900 English text.",
+        "params": "1.68B", "layers": 26, "hidden_dim": 1664, "heads": 13, "val_bpb": "1.211",
     },
     "d26-22btok": {
         "repo_id": "mhla/gpt1900-d26-22btok",
@@ -47,8 +47,8 @@ UPLOAD_CONFIGS = {
         "steps": [17517],
         "num_optim_ranks": 8,
         "desc": "GPT-1900 (D26, 22B tokens)",
-        "detail": "A 1.2B parameter GPT-style language model trained on ~22B tokens of pre-1900 English text (20x data:param ratio).",
-        "params": "~1.2B", "layers": 26, "hidden_dim": 1664, "heads": 13, "val_bpb": "0.802",
+        "detail": "A 1.68B parameter GPT-style language model trained on ~22B tokens of pre-1900 English text (20x data:param ratio).",
+        "params": "1.68B", "layers": 26, "hidden_dim": 1664, "heads": 13, "val_bpb": "0.802",
     },
     "d34-8b-subset": {
         "repo_id": "mhla/gpt1900-d34-8b-subset",
@@ -56,8 +56,17 @@ UPLOAD_CONFIGS = {
         "steps": [10507],
         "num_optim_ranks": 8,
         "desc": "GPT-1900 (D34, 8B token subset)",
-        "detail": "A 3.3B parameter GPT-style language model trained on ~8B tokens of pre-1900 English text (11x data:param ratio).",
-        "params": "~3.3B", "layers": 34, "hidden_dim": 2176, "heads": 17, "val_bpb": "0.721",
+        "detail": "A 3.29B parameter GPT-style language model trained on ~8B tokens of pre-1900 English text (11x data:param ratio).",
+        "params": "3.29B", "layers": 34, "hidden_dim": 2176, "heads": 17, "val_bpb": "0.721",
+    },
+    "d34-22btok": {
+        "repo_id": "mhla/gpt1900-d34-22btok",
+        "checkpoint_dir": os.path.join(BASE_DIR, "base_checkpoints/d34"),
+        "steps": [9000, 10507],
+        "num_optim_ranks": 64,
+        "desc": "GPT-1900 (D34, 22B tokens)",
+        "detail": "A 3.29B parameter GPT-style language model trained on ~22B tokens of pre-1900 English text (11x data:param ratio).",
+        "params": "3.29B", "layers": 34, "hidden_dim": 2176, "heads": 17, "val_bpb": "0.726",
     },
 }
 
