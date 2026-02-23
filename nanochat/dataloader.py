@@ -143,10 +143,12 @@ def tokenizing_distributed_data_loader_with_state_bos_bestfit(
                     row_buffer[row_idx, pos:pos + doc_len] = torch.tensor(doc, dtype=torch.long)
                     pos += doc_len
                 else:
-                    # No doc fits - crop shortest in buffer to fill remaining and minimize waste
+                    # No doc fits — crop to fill remaining, keep the rest in buffer
                     shortest_idx = min(range(len(doc_buffer)), key=lambda i: len(doc_buffer[i]))
                     doc = doc_buffer.pop(shortest_idx)
                     row_buffer[row_idx, pos:pos + remaining] = torch.tensor(doc[:remaining], dtype=torch.long)
+                    if len(doc) > remaining:
+                        doc_buffer.append(doc[remaining:])  # preserve leftover tokens
                     pos += remaining
 
         # Copy to pinned CPU buffer, then single HtoD transfer
