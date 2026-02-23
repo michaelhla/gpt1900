@@ -14,5 +14,5 @@ export OMP_NUM_THREADS=1
 export NANOCHAT_BASE_DIR=/mnt/main0/data/michaelhla/gpt1900_training
 export PYTHONPATH=/mnt/main0/home/michaelhla/evolutionaryscale/gpt1900
 
-torchrun --standalone --nproc_per_node=8 -m scripts.base_train -- --depth=26 --target-param-data-ratio=20 --device-batch-size=16 --fp8 --run=pre1900_d26 --save-every=2000 --window-pattern L
+torchrun --standalone --nproc_per_node=8 -m scripts.base_train -- --depth=26 --target-param-data-ratio=20 --device-batch-size=16 --fp8 --run=pre1900_d26_full22btok --save-every=2000 --window-pattern L
 torchrun --standalone --nproc_per_node=8 -m scripts.base_eval -- --device-batch-size=16
