@@ -30,5 +30,5 @@ srun torchrun \
     --rdzv_backend=c10d \
     --rdzv_endpoint=$HEAD_NODE:29500 \
     -m scripts.base_train -- \
-    --depth=45 --target-param-data-ratio=20 --device-batch-size=2 --fp8 \
+    --depth=45 --target-param-data-ratio=20 --device-batch-size=1 --fp8 \
     --run=pre1900_d45_8node --save-every=3000 --window-pattern L
