@@ -20,7 +20,7 @@ from nanochat.common import compute_init, compute_cleanup, print0, DummyWandb, g
 from nanochat.tokenizer import get_token_bytes
 from nanochat.checkpoint_manager import save_checkpoint
 from nanochat.loss_eval import evaluate_bpb
-from nanochat.checkpoint_manager import load_model
+from nanochat.checkpoint_manager import load_model, load_model_from_dir
 import torch.distributed as dist
 
 from tasks.common import TaskMixture
@@ -37,6 +37,8 @@ parser.add_argument("--dtype", type=str, default="bfloat16", help="float32|bfloa
 # Model loading
 parser.add_argument("--model-tag", type=str, default=None, help="model tag to load from")
 parser.add_argument("--model-step", type=int, default=None, help="model step to load from")
+parser.add_argument("--checkpoints-dir", type=str, default=None, help="source checkpoints directory (relative to base dir); if set, loads via load_model_from_dir instead of load_model('base', ...)")
+parser.add_argument("--output-dir", type=str, default="pre1900_sft_checkpoints", help="output checkpoints directory (relative to base dir)")
 # Training horizon
 parser.add_argument("--num-iterations", type=int, default=-1, help="number of optimization steps (-1 = full epoch)")
 # Batch sizes
@@ -74,8 +76,15 @@ get_max_memory = torch.cuda.max_memory_allocated if device_type == "cuda" else l
 use_dummy_wandb = args.run == "dummy" or not master_process
 wandb_run = DummyWandb() if use_dummy_wandb else wandb.init(project="nanochat-sft", name=args.run, config=user_config)
 
+# Base dir (needed for checkpoints and data)
+base_dir = get_base_dir()
+
 # Load the model and tokenizer
-model, tokenizer, meta = load_model("base", device, phase="train", model_tag=args.model_tag, step=args.model_step)
+if args.checkpoints_dir:
+    checkpoints_path = os.path.join(base_dir, args.checkpoints_dir)
+    model, tokenizer, meta = load_model_from_dir(checkpoints_path, device, phase="train", model_tag=args.model_tag, step=args.model_step)
+else:
+    model, tokenizer, meta = load_model("base", device, phase="train", model_tag=args.model_tag, step=args.model_step)
 pretrain_batch_size = meta.get("device_batch_size", None)
 if pretrain_batch_size is not None and args.device_batch_size > pretrain_batch_size:
     print0(f"FOOTGUN WARNING: base model training used device_batch_size {pretrain_batch_size}, did you pass in a good --device-batch-size to this script?")
@@ -100,7 +109,6 @@ for group in optimizer.param_groups:
     group["initial_lr"] = group["lr"]
 
 # SFT data: pre-1900 instruction pairs
-base_dir = get_base_dir()
 train_filepath = os.path.join(base_dir, args.train_data)
 val_filepath = os.path.join(base_dir, args.val_data)
 train_dataset = CustomJSON(filepath=train_filepath)
@@ -251,7 +259,7 @@ while True:
 
     if master_process and last_step and not args.dry_run:
         output_dirname = args.model_tag if args.model_tag else f"d{depth}"
-        checkpoint_dir = os.path.join(base_dir, "pre1900_sft_checkpoints", output_dirname)
+        checkpoint_dir = os.path.join(base_dir, args.output_dir, output_dirname)
         save_checkpoint(
             checkpoint_dir,
             step,
