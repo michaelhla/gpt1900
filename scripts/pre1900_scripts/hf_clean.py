@@ -666,6 +666,7 @@ def process_document(
     source: str = "",
     min_ocr_score: float | None = None,
     min_legibility: float | None = None,
+    skip_anachronism: bool = False,
 ) -> tuple[str | None, str]:
     """
     Process a single document.
@@ -709,9 +710,10 @@ def process_document(
         return None, f"too many OCR artifacts ({artifact_count})"
 
     # Check for post-1900 physics anachronisms (data leakage prevention)
-    has_anachronism, reason = contains_post_1900_physics(text)
-    if has_anachronism:
-        return None, f"post-1900 physics ({reason})"
+    if not skip_anachronism:
+        has_anachronism, reason = contains_post_1900_physics(text)
+        if has_anachronism:
+            return None, f"post-1900 physics ({reason})"
 
     cleaned = clean_text(text)
 
@@ -736,6 +738,7 @@ def process_shard_batch(
     min_length: int,
     min_ocr_score: float,
     min_legibility: float,
+    skip_anachronism: bool = False,
 ) -> dict:
     """
     Process a batch of (input_path, output_path) pairs.
@@ -796,6 +799,7 @@ def process_shard_batch(
                 source=source,
                 min_ocr_score=min_ocr_score if min_ocr_score >= 0 else None,
                 min_legibility=min_legibility if min_legibility >= 0 else None,
+                skip_anachronism=skip_anachronism,
             )
 
             if cleaned is not None:
@@ -867,6 +871,8 @@ def main():
                         help="Memory per worker in GB")
     parser.add_argument("--partition", type=str, default="midpri",
                         help="Slurm partition")
+    parser.add_argument("--skip-anachronism-filter", action="store_true",
+                        help="Skip post-1900 physics anachronism filter (use when cleaning 1900-1914 supplement)")
     args = parser.parse_args()
 
     # Find all parquet files recursively
@@ -932,6 +938,7 @@ def main():
             [args.min_length] * len(batches),
             [args.min_ocr_score] * len(batches),
             [args.min_legibility] * len(batches),
+            [args.skip_anachronism_filter] * len(batches),
             progress=True,
             errors="skip",
         )
