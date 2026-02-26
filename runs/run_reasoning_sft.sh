@@ -25,6 +25,7 @@ echo "=== Starting reasoning SFT ==="
 torchrun --standalone --nproc_per_node=8 -m scripts.pre1900_sft -- \
     --model-tag d34 \
     --device-batch-size=4 \
+    --total-batch-size=65536 \
     --num-iterations 50 \
     --output-dir pre1900_reasoning_sft_checkpoints \
     --train-data instruct_data/reasoning/sft_train.jsonl \
