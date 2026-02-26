@@ -20,6 +20,7 @@ parser.add_argument('-t', '--temperature', type=float, default=0.6, help='Temper
 parser.add_argument('-k', '--top-k', type=int, default=50, help='Top-k sampling parameter')
 parser.add_argument('--device-type', type=str, default='', choices=['cuda', 'cpu', 'mps'], help='Device type for evaluation: cuda|cpu|mps. empty => autodetect')
 parser.add_argument('-d', '--dtype', type=str, default='bfloat16', choices=['float32', 'bfloat16'])
+parser.add_argument('--single-turn', action='store_true', help='Reset conversation after each exchange')
 args = parser.parse_args()
 
 # Init the model and tokenizer
@@ -99,6 +100,9 @@ while True:
     if response_tokens[-1] != assistant_end:
         response_tokens.append(assistant_end)
     conversation_tokens.extend(response_tokens)
+
+    if args.single_turn:
+        conversation_tokens = [bos]
 
     # In the prompt mode, we only want a single response and exit
     if args.prompt:
