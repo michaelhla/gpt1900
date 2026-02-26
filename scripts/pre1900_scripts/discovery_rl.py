@@ -20,6 +20,7 @@ torchrun --standalone --nproc_per_node=8 -m scripts.pre1900_scripts.discovery_rl
 
 import argparse
 import os
+import re
 import asyncio
 import itertools
 import json
@@ -95,6 +96,15 @@ async def batch_judge_discovery(
         for p, r, g in zip(prompts, responses, gold_answers)
     ]
     return await asyncio.gather(*tasks)
+
+
+FORMAT_REWARD = 0.3  # partial credit for using the correct reasoning format
+
+def compute_format_reward(response: str) -> float:
+    """Return FORMAT_REWARD if the response uses <think>...</think> and \\answer{...} tags, else 0."""
+    has_think = bool(re.search(r"<think>.*?</think>", response, re.DOTALL))
+    has_answer = bool(re.search(r"\\answer\{", response))
+    return FORMAT_REWARD if (has_think and has_answer) else 0.0
 
 
 # -----------------------------------------------------------------------------
@@ -244,14 +254,16 @@ def get_batch():
             generated_text = tokenizer.decode(generated_tokens)
             generated_texts.append(generated_text)
 
-        # Score all samples via async Claude API calls (with gold answer)
-        rewards_list = asyncio.run(batch_judge_discovery(
+        # Score all samples: format reward (local) + correctness reward (Claude judge)
+        format_rewards = [compute_format_reward(text) for text in generated_texts]
+        correctness_rewards = asyncio.run(batch_judge_discovery(
             [prompt_text] * len(generated_texts),
             generated_texts,
             [gold_answer] * len(generated_texts),
             args.judge_model,
             args.max_concurrent_api,
         ))
+        rewards_list = [f + c for f, c in zip(format_rewards, correctness_rewards)]
 
         # Pad sequences so their lengths match
         max_length = max(len(seq) for seq in generated_token_sequences)
