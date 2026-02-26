@@ -29,13 +29,13 @@ echo "=== Starting physics CLM training ==="
 torchrun --standalone --nproc_per_node=8 \
     -m scripts.physics_clm -- \
     --data-dir ${DATA_DIR} \
-    --num-epochs 5 \
-    --device-batch-size 8 \
+    --num-epochs 3 \
+    --device-batch-size 4 \
     --total-batch-size 65536 \
     --matrix-lr 0.005 \
     --embedding-lr 0.05 \
     --unembedding-lr 0.001 \
     --eval-every 50 \
-    --save-every 200 \
+    --save-every 100 \
     --output-tag pre1900_physics_clm_d34 \
     --run pre1900_physics_clm_d34
