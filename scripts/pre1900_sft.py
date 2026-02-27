@@ -196,7 +196,9 @@ def sft_data_generator_bos_bestfit(split, buffer_size=100):
                 approx_progress = it / args.num_iterations
             else:
                 approx_progress = consumed / dataset_size
-            if consumed >= dataset_size:
+            # Only use epoch-completion as stopping criterion when num_iterations
+            # is not explicitly set; otherwise num_iterations controls stopping.
+            if consumed >= dataset_size and args.num_iterations <= 0:
                 last_step = True
 
         use_cuda = device_type == "cuda"
