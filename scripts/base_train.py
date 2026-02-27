@@ -70,6 +70,7 @@ parser.add_argument("--warmup-ratio", type=float, default=0.0, help="ratio of it
 parser.add_argument("--warmdown-ratio", type=float, default=0.5, help="ratio of iterations for LR warmdown")
 parser.add_argument("--final-lr-frac", type=float, default=0.0, help="final LR as fraction of initial LR")
 parser.add_argument("--resume-from-step", type=int, default=-1, help="resume training from this step (-1 = disable)")
+parser.add_argument("--resume-weights-only", action="store_true", help="when resuming, load only model weights (skip optimizer/dataloader state). Useful when changing GPU count.")
 # Evaluation
 parser.add_argument("--eval-every", type=int, default=250, help="evaluate val bpb every N steps (-1 = disable)")
 parser.add_argument("--eval-tokens", type=int, default=40*524288, help="number of tokens to evaluate val loss on")
@@ -156,10 +157,11 @@ output_dirname = args.model_tag if args.model_tag else f"d{args.depth}" # e.g. d
 checkpoint_dir = os.path.join(base_dir, "base_checkpoints", output_dirname)
 resuming = args.resume_from_step != -1
 if resuming:
-    print0(f"Resuming optimization from step {args.resume_from_step}")
-    model_data, optimizer_data, meta_data = load_checkpoint(checkpoint_dir, args.resume_from_step, device, load_optimizer=True, rank=ddp_rank)
+    load_optim = not args.resume_weights_only
+    print0(f"Resuming from step {args.resume_from_step} (weights_only={args.resume_weights_only})")
+    model_data, optimizer_data, meta_data = load_checkpoint(checkpoint_dir, args.resume_from_step, device, load_optimizer=load_optim, rank=ddp_rank)
     model.load_state_dict(model_data, strict=True, assign=True)
-    del model_data # free up this memory after the copy
+    del model_data
 
 # -----------------------------------------------------------------------------
 # FP8 training initialization and management (this has to be done before torch.compile)
@@ -313,13 +315,13 @@ optimizer = model.setup_optimizer(
     weight_decay=weight_decay_scaled,
 )
 
-if resuming:
+if resuming and not args.resume_weights_only:
     optimizer.load_state_dict(optimizer_data)
     del optimizer_data
 
 # -----------------------------------------------------------------------------
 # Initialize the DataLoaders for train/val
-dataloader_resume_state_dict = None if not resuming else meta_data["dataloader_state_dict"]
+dataloader_resume_state_dict = None if not resuming or args.resume_weights_only else meta_data["dataloader_state_dict"]
 train_loader = tokenizing_distributed_data_loader_with_state_bos_bestfit(tokenizer, args.device_batch_size, args.max_seq_len, split="train", device=device, resume_state_dict=dataloader_resume_state_dict)
 build_val_loader = lambda: tokenizing_distributed_data_loader_bos_bestfit(tokenizer, args.device_batch_size, args.max_seq_len, split="val", device=device)
 x, y, dataloader_state_dict = next(train_loader) # kick off load of the very first batch of data
