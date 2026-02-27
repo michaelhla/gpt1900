@@ -4,7 +4,7 @@
 #SBATCH --gpus-per-node=8
 #SBATCH --ntasks-per-node=1
 #SBATCH --mem=0
-#SBATCH --job-name=pre1915_d52_8node
+#SBATCH --job-name=d52_8node
 #SBATCH --output=/mnt/main0/home/michaelhla/pre1915_train_%j.log
 
 cd /mnt/main0/home/michaelhla/evolutionaryscale/gpt1900
@@ -31,5 +31,5 @@ srun torchrun \
     --rdzv_endpoint=$HEAD_NODE:29500 \
     -m scripts.base_train -- \
     --depth=52 --aspect-ratio=64 --head-dim=128 \
-    --target-param-data-ratio=11 --device-batch-size=1 --fp8 \
+    --target-param-data-ratio=11 --device-batch-size=1 --fp8 --activation-checkpointing \
     --run=pre1915_d52_combined --save-every=3000 --window-pattern L

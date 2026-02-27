@@ -45,6 +45,7 @@ parser.add_argument("--device-type", type=str, default="", help="cuda|cpu|mps (e
 # FP8 training
 parser.add_argument("--fp8", action="store_true", help="enable FP8 training (requires H100+ GPU and torchao)")
 parser.add_argument("--fp8-recipe", type=str, default="tensorwise", choices=["rowwise", "tensorwise"], help="FP8 scaling recipe: tensorwise (faster, recommended) or rowwise (more accurate but slower)")
+parser.add_argument("--activation-checkpointing", action="store_true", help="enable activation checkpointing to reduce memory (trades compute for memory)")
 # Model architecture
 parser.add_argument("--depth", type=int, default=20, help="depth of the Transformer model")
 parser.add_argument("--aspect-ratio", type=int, default=64, help="model_dim = depth * aspect_ratio")
@@ -145,6 +146,9 @@ model_config_kwargs = asdict(model_config)
 print0(f"Model config:\n{json.dumps(model_config_kwargs, indent=2)}")
 model.to_empty(device=device) # 2) All tensors get storage on target device but with uninitialized (garbage) data
 model.init_weights() # 3) All tensors get initialized
+if args.activation_checkpointing:
+    model.use_checkpoint = True
+    print0("Activation checkpointing enabled")
 
 # If we are resuming, overwrite the model parameters with those of the checkpoint
 base_dir = get_base_dir()

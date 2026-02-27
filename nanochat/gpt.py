@@ -14,6 +14,7 @@ Notable features:
 
 from functools import partial
 from dataclasses import dataclass
+from torch.utils.checkpoint import checkpoint as torch_checkpoint
 
 import torch
 import torch.nn as nn
@@ -184,6 +185,7 @@ class GPT(nn.Module):
         cos, sin = self._precompute_rotary_embeddings(self.rotary_seq_len, head_dim)
         self.register_buffer("cos", cos, persistent=False) # persistent=False means it's not saved to the checkpoint
         self.register_buffer("sin", sin, persistent=False)
+        self.use_checkpoint = False  # set by training script to enable activation checkpointing
 
     @torch.no_grad()
     def init_weights(self):
@@ -403,7 +405,10 @@ class GPT(nn.Module):
         for i, block in enumerate(self.transformer.h):
             x = self.resid_lambdas[i] * x + self.x0_lambdas[i] * x0
             ve = self.value_embeds[str(i)](idx) if str(i) in self.value_embeds else None
-            x = block(x, ve, cos_sin, self.window_sizes[i], kv_cache)
+            if self.use_checkpoint and kv_cache is None:
+                x = torch_checkpoint(block, x, ve, cos_sin, self.window_sizes[i], kv_cache, use_reentrant=False)
+            else:
+                x = block(x, ve, cos_sin, self.window_sizes[i], kv_cache)
         x = norm(x)
 
         # Forward the lm_head (compute logits)
