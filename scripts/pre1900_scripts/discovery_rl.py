@@ -42,9 +42,18 @@ from scripts.pre1900_scripts.constants import REASONING_SYSTEM_PROMPT
 # Claude discovery judge
 
 DISCOVERY_JUDGE_PROMPT = """\
-Given the problem and correct answer below, does the model's response arrive at a \
-substantively correct conclusion? The core physical insight must be right, though it \
-does not need to match word-for-word. Return ONLY 1 (correct) or 0 (incorrect).
+You are a scientific accuracy judge. Given a problem, the correct answer, and a \
+model's response, rate the model's response on a scale from 0 to 5.
+
+Rubric:
+0 = Completely wrong or irrelevant
+1 = Shows some relevant reasoning but reaches an incorrect conclusion
+2 = Identifies part of the correct phenomenon but misses the key insight
+3 = Gets the general direction right but with significant errors or gaps
+4 = Mostly correct with minor inaccuracies or incomplete reasoning
+5 = Fully correct, captures the core physical insight
+
+Respond with ONLY a <score> tag containing your integer score. Example: <score>3</score>
 
 Problem:
 {prompt}
@@ -64,18 +73,25 @@ async def judge_discovery_single(
     model: str,
     semaphore: asyncio.Semaphore,
 ) -> float:
-    """Score a single response against the gold answer. Returns 0.0 or 1.0."""
+    """Score a single response against the gold answer. Returns 0.0 to 1.0."""
     judge_input = DISCOVERY_JUDGE_PROMPT.format(prompt=prompt, response=response, gold_answer=gold_answer)
     async with semaphore:
         try:
             result = await client.messages.create(
                 model=model,
-                max_tokens=8,
-                messages=[{"role": "user", "content": judge_input}],
+                max_tokens=64,
+                messages=[
+                    {"role": "user", "content": judge_input},
+                    {"role": "assistant", "content": "<score>"},
+                ],
             )
-            score_text = result.content[0].text.strip()
-            score = int(score_text)
-            return float(max(0, min(1, score)))  # clamp to {0, 1}
+            response_text = result.content[0].text.strip()
+            match = re.match(r"(\d)", response_text)
+            if match is None:
+                print0(f"  Judge parse error: {response_text[:100]}")
+                return 0.0
+            score = int(match.group(1))
+            return float(max(0, min(5, score))) / 5.0  # normalize to [0, 1]
         except Exception as e:
             print0(f"  Judge API error: {e}")
             return 0.0  # conservative fallback on error
