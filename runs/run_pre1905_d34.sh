@@ -1,10 +1,10 @@
 #!/bin/bash
 #SBATCH --partition=highpri
-#SBATCH --nodes=2
+#SBATCH --nodes=8
 #SBATCH --gpus-per-node=8
 #SBATCH --ntasks-per-node=1
 #SBATCH --mem=0
-#SBATCH --job-name=pre1905_d34
+#SBATCH --job-name=pre1905_d34_8node
 #SBATCH --output=/mnt/main0/home/michaelhla/pre1905_train_%j.log
 
 cd /mnt/main0/home/michaelhla/evolutionaryscale/gpt1900
@@ -25,10 +25,10 @@ export NCCL_IB_DISABLE=0
 export NCCL_NET_GDR_LEVEL=5
 
 srun torchrun \
-    --nnodes=2 \
+    --nnodes=8 \
     --nproc_per_node=8 \
     --rdzv_backend=c10d \
     --rdzv_endpoint=$HEAD_NODE:29500 \
     -m scripts.base_train -- \
     --depth=34 --target-param-data-ratio=20 --device-batch-size=4 --fp8 \
-    --run=pre1905_d34 --save-every=3000 --window-pattern L
+    --run=pre1905_d34_8node --save-every=500 --window-pattern L
