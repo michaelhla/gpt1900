@@ -31,4 +31,5 @@ srun torchrun \
     --rdzv_endpoint=$HEAD_NODE:29500 \
     -m scripts.base_train -- \
     --depth=34 --target-param-data-ratio=20 --device-batch-size=4 --fp8 \
-    --run=pre1905_d34_8node --save-every=500 --window-pattern L
+    --run=pre1905_d34_8node --save-every=500 --window-pattern L \
+    --resume-from-step=3000 --resume-weights-only
