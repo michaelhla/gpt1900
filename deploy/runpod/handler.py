@@ -22,6 +22,7 @@ device = torch.device("cuda")
 model_dir = "/app/model"
 step = find_last_step(model_dir)
 model, tokenizer, meta = build_model(model_dir, step, device, phase="eval")
+model = model.bfloat16()  # build_model upcasts bf16→f32 for training; convert back for inference (~10GB vs ~21GB)
 engine = Engine(model, tokenizer)
 print(f"Model loaded: step={step}, config={meta['model_config']}")
 
