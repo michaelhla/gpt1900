@@ -1,0 +1,6 @@
+runpod
+tiktoken>=0.11.0
+rustbpe>=0.1.0
+huggingface_hub
+filelock
+tokenizers
