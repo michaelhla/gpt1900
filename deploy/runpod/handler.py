@@ -3,6 +3,9 @@ RunPod serverless handler for nanochat inference.
 
 Generator handler that loads the model once at module level (persists across jobs)
 and yields token chunks per job for RunPod's streaming protocol.
+
+Set CHAT_MODE=1 env var for chat-tuned models (uses special tokens).
+Default is completion mode (single-turn text continuation).
 """
 import os
 import random
@@ -18,13 +21,14 @@ from nanochat.engine import Engine
 # ---------------------------------------------------------------------------
 # Load model ONCE at module level (persists across RunPod jobs on same worker)
 # ---------------------------------------------------------------------------
+CHAT_MODE = os.environ.get("CHAT_MODE", "0") == "1"
 device = torch.device("cuda")
 model_dir = "/app/model"
 step = find_last_step(model_dir)
 model, tokenizer, meta = build_model(model_dir, step, device, phase="eval")
 model = model.bfloat16()  # build_model upcasts bf16→f32 for training; convert back for inference (~10GB vs ~21GB)
 engine = Engine(model, tokenizer)
-print(f"Model loaded: step={step}, config={meta['model_config']}")
+print(f"Model loaded: step={step}, chat_mode={CHAT_MODE}, config={meta['model_config']}")
 
 
 def handler(job):
@@ -35,26 +39,34 @@ def handler(job):
     top_k = inp.get("top_k", 50)
     max_tokens = inp.get("max_tokens", 512)
 
-    # Build conversation token sequence (mirrors chat_web.py:331-349)
     bos = tokenizer.get_bos_token_id()
-    user_start = tokenizer.encode_special("<|user_start|>")
-    user_end = tokenizer.encode_special("<|user_end|>")
-    assistant_start = tokenizer.encode_special("<|assistant_start|>")
-    assistant_end = tokenizer.encode_special("<|assistant_end|>")
 
-    tokens = [bos]
-    for msg in messages:
-        if msg["role"] == "user":
-            tokens.append(user_start)
-            tokens.extend(tokenizer.encode(msg["content"]))
-            tokens.append(user_end)
-        elif msg["role"] == "assistant":
-            tokens.append(assistant_start)
-            tokens.extend(tokenizer.encode(msg["content"]))
-            tokens.append(assistant_end)
-    tokens.append(assistant_start)
+    if CHAT_MODE:
+        # Chat format with special tokens (for fine-tuned models)
+        user_start = tokenizer.encode_special("<|user_start|>")
+        user_end = tokenizer.encode_special("<|user_end|>")
+        assistant_start = tokenizer.encode_special("<|assistant_start|>")
+        assistant_end = tokenizer.encode_special("<|assistant_end|>")
 
-    # Stream generation (mirrors chat_web.py:262-311)
+        tokens = [bos]
+        for msg in messages:
+            if msg["role"] == "user":
+                tokens.append(user_start)
+                tokens.extend(tokenizer.encode(msg["content"]))
+                tokens.append(user_end)
+            elif msg["role"] == "assistant":
+                tokens.append(assistant_start)
+                tokens.extend(tokenizer.encode(msg["content"]))
+                tokens.append(assistant_end)
+        tokens.append(assistant_start)
+        stop_tokens = {assistant_end, bos}
+    else:
+        # Completion mode: single-turn text continuation (for base models)
+        last_msg = messages[-1]["content"] if messages else ""
+        tokens = tokenizer.encode(last_msg, prepend=bos)
+        stop_tokens = {bos}
+
+    # Stream generation
     accumulated = []
     last_clean = ""
 
@@ -68,7 +80,7 @@ def handler(job):
             seed=random.randint(0, 2**31 - 1),
         ):
             tok = token_column[0]
-            if tok == assistant_end or tok == bos:
+            if tok in stop_tokens:
                 break
 
             accumulated.append(tok)

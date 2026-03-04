@@ -11,8 +11,9 @@ COPY nanochat/ /app/nanochat/
 # Download model weights at build time (baked in for FlashBoot cold starts)
 ARG HF_REPO
 ARG HF_TOKEN
+ARG HF_STEP
 COPY deploy/runpod/download_model.py .
-RUN HF_TOKEN="$HF_TOKEN" python download_model.py --repo "$HF_REPO" --dest /app/model
+RUN HF_TOKEN="$HF_TOKEN" python download_model.py --repo "$HF_REPO" --dest /app/model ${HF_STEP:+--step $HF_STEP}
 
 # Copy handler
 COPY deploy/runpod/handler.py .
