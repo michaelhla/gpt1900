@@ -15,6 +15,7 @@ import argparse
 import gc
 import json
 import os
+import shutil
 import time
 from dataclasses import dataclass
 
@@ -76,6 +77,8 @@ def build_model_only(checkpoint_dir, step, device):
     model.to_empty(device=device)
     model.init_weights()
     model.load_state_dict(model_data, strict=True, assign=True)
+    if device.type == "cuda":
+        model.bfloat16()
     model.eval()
     return model
 
@@ -397,6 +400,11 @@ def main():
         with open(gen_path, "w") as f:
             json.dump(all_generations, f, indent=2)
         print(f"  Saved generations to {gen_path}")
+        # Free disk space by removing downloaded checkpoint
+        ckpt_cache = os.path.join(cache_dir, ckpt.name)
+        if os.path.isdir(ckpt_cache):
+            shutil.rmtree(ckpt_cache)
+            print(f"  Removed cache {ckpt_cache}")
 
     print(f"\nGeneration complete: {len(all_generations)} checkpoints\n")
 
