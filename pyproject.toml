@@ -68,6 +68,9 @@ cpu = [
 gpu = [
     "torch==2.9.1",
 ]
+runpod = [
+    "runpod>=1.7.0",
+]
 
 [tool.uv]
 conflicts = [
