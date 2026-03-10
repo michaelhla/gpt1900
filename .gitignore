@@ -5,6 +5,7 @@ dev-ignore/
 report.md
 eval_bundle/
 data/
+instruct_data/
 
 # Secrets
 .env
