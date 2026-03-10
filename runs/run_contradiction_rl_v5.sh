@@ -8,13 +8,6 @@ echo "Step 1: Downloading physics SFT checkpoint..."
 huggingface-cli download mhla/gpt1900-d34-physics-sft \
     --local-dir $NANOCHAT_BASE_DIR/physics_clm_checkpoints/d34
 
-# Step 2: Generate contradiction problems (CPU, needs ANTHROPIC_API_KEY)
-echo "Step 2: Generating contradiction problems..."
-python -m scripts.pre1900_scripts.generate_contradiction_problems \
-    --insights-file instruct_data/rl_problems/rl_insights_raw.jsonl \
-    --output-dir instruct_data/contradiction_problems \
-    --run phase2
-
 # Step 3: Reasoning SFT v5 (8 GPUs)
 echo "Step 3: Reasoning SFT v5..."
 torchrun --standalone --nproc_per_node=8 -m scripts.pre1900_sft -- \

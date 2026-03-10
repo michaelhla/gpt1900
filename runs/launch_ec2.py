@@ -40,9 +40,10 @@ REPO_URL = "https://github.com/michaelhla/gpt1900"
 DEFAULT_INSTANCE_TYPE = "p5.48xlarge"  # 8x H100
 DEFAULT_VOLUME_SIZE = 200  # GB root EBS
 DEFAULT_HF_REPO = "mhla/gpt1900-checkpoints"
+DEFAULT_HF_DATA_REPO = "mhla/gpt1900-instruct-data"
 DEFAULT_REGION = "us-east-1"
-NANOCHAT_BASE_DIR = "/root/.cache/nanochat"
-WORK_DIR = "/root/gpt1900"
+NANOCHAT_BASE_DIR = "/home/ubuntu/.cache/nanochat"
+WORK_DIR = "/home/ubuntu/gpt1900"
 POLL_INTERVAL = 30  # seconds
 
 # On-demand $/hr for cost estimates
@@ -91,8 +92,8 @@ Examples:
                         help="Security group ID (default: auto-create)")
     parser.add_argument("--hf-repo", default=DEFAULT_HF_REPO,
                         help=f"HuggingFace repo for checkpoint upload (default: {DEFAULT_HF_REPO})")
-    parser.add_argument("--hf-data-repo", default=None,
-                        help="HuggingFace repo to download data from at startup")
+    parser.add_argument("--hf-data-repo", default=DEFAULT_HF_DATA_REPO,
+                        help=f"HuggingFace dataset repo for training data (default: {DEFAULT_HF_DATA_REPO})")
     parser.add_argument("--setup-cmd", default=None,
                         help="Custom command to run before training")
     parser.add_argument("--env", nargs="*", default=[], metavar="VAR",
@@ -228,14 +229,14 @@ def build_user_data(*, script: str | None, cmd: str | None,
     if capacity_reservation:
         lines.extend([
             "# Persist env vars for SSH sessions",
-            "cat >> /root/.bashrc << 'ENVBLOCK'",
+            "cat >> /home/ubuntu/.bashrc << 'ENVBLOCK'",
         ])
         for k in env_vars:
             lines.append(f'export {k}="${k}"')
         lines.extend([
             f"export NANOCHAT_BASE_DIR={NANOCHAT_BASE_DIR}",
             "export OMP_NUM_THREADS=1",
-            f"export PATH=/root/.local/bin:$PATH",
+            f"export PATH=/home/ubuntu/.local/bin:$PATH",
             f"cd {WORK_DIR} 2>/dev/null && source .venv/bin/activate 2>/dev/null || true",
             "ENVBLOCK",
             "",
@@ -251,17 +252,19 @@ def build_user_data(*, script: str | None, cmd: str | None,
         f"git clone {REPO_URL} {WORK_DIR}",
         f"cd {WORK_DIR}",
         'command -v uv || (curl -LsSf https://astral.sh/uv/install.sh | sh)',
-        "export PATH=/root/.local/bin:$PATH",
+        "export PATH=/home/ubuntu/.local/bin:$PATH",
         "uv sync --extra gpu",
         "source .venv/bin/activate",
         "",
     ])
 
-    # Download data from HuggingFace
+    # Download instruct data from HuggingFace and symlink into repo
     if hf_data_repo:
+        dl_dir = f"{NANOCHAT_BASE_DIR}/instruct_data"
         lines.extend([
             f"echo 'Downloading data from {hf_data_repo}...'",
-            f"huggingface-cli download {hf_data_repo} --local-dir {NANOCHAT_BASE_DIR}",
+            f"huggingface-cli download {hf_data_repo} --repo-type dataset --local-dir {dl_dir}",
+            f"ln -sfn {dl_dir} {WORK_DIR}/instruct_data",
             "",
         ])
 
@@ -365,7 +368,6 @@ def launch(args):
         "MaxCount": 1,
         "UserData": base64.b64encode(user_data.encode()).decode(),
         "SecurityGroupIds": [sg_id],
-        "InstanceInitiatedShutdownBehavior": shutdown_behavior,
         "BlockDeviceMappings": [{
             "DeviceName": "/dev/sda1",
             "Ebs": {
@@ -386,16 +388,24 @@ def launch(args):
     if args.key_name:
         launch_params["KeyName"] = args.key_name
 
-    # Capacity block reservation (targeted)
     if args.capacity_reservation:
+        # Capacity block: special market type + targeted reservation
+        # Look up the AZ from the reservation
+        cr_desc = ec2.describe_capacity_reservations(
+            CapacityReservationIds=[args.capacity_reservation]
+        )["CapacityReservations"][0]
+        cr_az = cr_desc["AvailabilityZone"]
+        launch_params["InstanceMarketOptions"] = {
+            "MarketType": "capacity-block",
+        }
         launch_params["CapacityReservationSpecification"] = {
             "CapacityReservationTarget": {
                 "CapacityReservationId": args.capacity_reservation,
             },
         }
-
-    # Spot vs on-demand
-    if args.spot:
+        launch_params["Placement"] = {"AvailabilityZone": cr_az}
+    elif args.spot:
+        launch_params["InstanceInitiatedShutdownBehavior"] = shutdown_behavior
         launch_params["InstanceMarketOptions"] = {
             "MarketType": "spot",
             "SpotOptions": {
@@ -403,6 +413,8 @@ def launch(args):
                 "InstanceInterruptionBehavior": "terminate",
             },
         }
+    else:
+        launch_params["InstanceInitiatedShutdownBehavior"] = shutdown_behavior
 
     mode = "CAPACITY BLOCK" if is_capacity_block else ("SPOT" if args.spot else "ON-DEMAND")
     print(f"\nLaunching EC2 instance ({mode})...")
@@ -435,7 +447,7 @@ def launch(args):
     inst = desc["Reservations"][0]["Instances"][0]
     public_ip = inst.get("PublicIpAddress")
     if public_ip and args.key_name:
-        print(f"\n  SSH:  ssh -i ~/.ssh/{args.key_name}.pem root@{public_ip}")
+        print(f"\n  SSH:  ssh -i ~/.ssh/{args.key_name}.pem ubuntu@{public_ip}")
         print(f"  Logs: ssh in and tail -f /var/log/training.log")
 
     return instance_id
@@ -503,16 +515,10 @@ def main():
     instance_id = launch(args)
     if not instance_id:
         return
-    # For capacity blocks, don't poll — just print SSH info and exit.
-    # The instance stays alive; user can Ctrl+C and SSH in whenever.
     if args.capacity_reservation:
-        print("\nCapacity block — instance will stay alive after training.")
-        print("Ctrl+C to detach. SSH in to monitor, run more jobs, or inspect results.")
-        print("The reservation auto-expires and terminates the instance at the end date.")
-        try:
-            poll_instance(instance_id, args.region, args.instance_type, args.spot)
-        except KeyboardInterrupt:
-            print(f"\nDetached. Instance {instance_id} still running.")
+        # Nothing to poll — instance stays alive, user SSHs in
+        print("\nCapacity block — instance stays alive until reservation expires.")
+        print("SSH in to monitor: tail -f /var/log/training.log")
     else:
         poll_instance(instance_id, args.region, args.instance_type, args.spot)
 
