@@ -1,0 +1,5 @@
+                            UV   Photo  Frozen   ApprC   Train      MM    Elev    Fall  | Mean
+discovery-rl-v5-s030       0.0     0.0     0.0     0.3     0.0     0.3     0.3     0.3  | 0.17
+discovery-rl-v5-s060       0.0     0.3     0.0     0.0     0.0     0.3     0.7     0.3  | 0.21
+discovery-rl-v5-s090       0.0     0.0     0.0     0.3     0.0     0.0     1.0     0.0  | 0.17
+discovery-rl-v5-s104       0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.7  | 0.08

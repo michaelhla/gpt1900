@@ -52,6 +52,10 @@ CHECKPOINTS = [
     Checkpoint("coherence-rl",     "mhla/gpt1900-d34-coherence-rl",       780,   "chat"),
     Checkpoint("reasoning-sft-v4", "mhla/gpt1900-d34-reasoning-sft-v4",   99,    "chat"),
     Checkpoint("discovery-rl-v4",  "mhla/gpt1900-d34-discovery-rl-v4",    180,   "chat"),
+    Checkpoint("discovery-rl-v5-s030", "local", 30,  "chat"),
+    Checkpoint("discovery-rl-v5-s060", "local", 60,  "chat"),
+    Checkpoint("discovery-rl-v5-s090", "local", 90,  "chat"),
+    Checkpoint("discovery-rl-v5-s104", "local", 104, "chat"),
 ]
 
 
@@ -94,6 +98,8 @@ def download_checkpoint(ckpt: Checkpoint, cache_dir: str) -> str:
     if os.path.exists(os.path.join(local_dir, f"model_{step_str}.pt")):
         print(f"  [cached] {ckpt.name}")
         return local_dir
+    if ckpt.repo == "local":
+        raise FileNotFoundError(f"Local checkpoint not found: {local_dir}/model_{step_str}.pt")
     print(f"  Downloading {ckpt.repo} step={ckpt.step} ...")
     snapshot_download(
         repo_id=ckpt.repo,
@@ -400,9 +406,9 @@ def main():
         with open(gen_path, "w") as f:
             json.dump(all_generations, f, indent=2)
         print(f"  Saved generations to {gen_path}")
-        # Free disk space by removing downloaded checkpoint
+        # Free disk space by removing downloaded checkpoint (skip symlinks / local)
         ckpt_cache = os.path.join(cache_dir, ckpt.name)
-        if os.path.isdir(ckpt_cache):
+        if os.path.isdir(ckpt_cache) and not os.path.islink(ckpt_cache):
             shutil.rmtree(ckpt_cache)
             print(f"  Removed cache {ckpt_cache}")
 
