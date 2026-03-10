@@ -39,6 +39,24 @@ def _patch_missing_keys(model_data, model_config):
         model_data["x0_lambdas"] = torch.zeros(n_layer)
         log0(f"Patching missing x0_lambdas in model data to 0.0")
 
+def _maybe_upload_hf(checkpoint_dir):
+    """Upload checkpoint dir to HuggingFace if HF_UPLOAD_REPO is set.
+
+    Runs in a subprocess so it doesn't block training.
+    """
+    import subprocess
+    hf_repo = os.environ.get("HF_UPLOAD_REPO")
+    if not hf_repo:
+        return
+    base_dir = get_base_dir()
+    logger.info(f"Uploading checkpoints to HF repo: {hf_repo}")
+    subprocess.Popen(
+        ["huggingface-cli", "upload", hf_repo, base_dir, "--include", "*.pt", "*.json", "tokenizer/*"],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+
+
 def save_checkpoint(checkpoint_dir, step, model_data, optimizer_data, meta_data, rank=0):
     if rank == 0:
         os.makedirs(checkpoint_dir, exist_ok=True)
@@ -51,6 +69,7 @@ def save_checkpoint(checkpoint_dir, step, model_data, optimizer_data, meta_data,
         with open(meta_path, "w", encoding="utf-8") as f:
             json.dump(meta_data, f, indent=2)
         logger.info(f"Saved metadata to: {meta_path}")
+        _maybe_upload_hf(checkpoint_dir)
     # Note that optimizer state is sharded across ranks, so each rank must save its own.
     if optimizer_data is not None:
         os.makedirs(checkpoint_dir, exist_ok=True)

@@ -5,6 +5,7 @@ description = "the minimal full-stack ChatGPT clone"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
+    "anthropic>=0.39.0",
     "datasets>=4.0.0",
     "fastapi>=0.117.1",
     "ipykernel>=7.1.0",
@@ -70,6 +71,10 @@ gpu = [
 ]
 runpod = [
     "runpod>=1.7.0",
+]
+sagemaker = [
+    "sagemaker>=2.200.0",
+    "boto3>=1.28.0",
 ]
 
 [tool.uv]
