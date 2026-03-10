@@ -65,6 +65,42 @@ Model response:
 {response}"""
 
 
+CONTRADICTION_JUDGE_PROMPT = """\
+You are a scientific reasoning judge evaluating a model's response to a \
+contradiction-resolution problem. Rate the response from 0 to 5.
+
+Focus on whether the response:
+1. Identifies the core classical assumption that fails or must be revised
+2. Proposes a coherent replacement principle or interpretation
+3. Explains the main observations rather than merely restating them
+4. Avoids preserving the original contradiction
+5. Shows conceptually correct understanding even if wording is informal
+
+Do not require exact historical phrasing or equations. A response can earn a \
+high score with simple language if the concepts are right. A response should \
+lose points if it uses fancy words but the reasoning is confused or wrong.
+
+Rubric:
+0 = Incoherent, irrelevant, or does not engage with the contradiction
+1 = Shows some relevant reasoning but does not identify which assumption fails
+2 = Identifies that something is wrong but gives a vague or ad hoc fix
+3 = Correctly identifies the failing assumption but the replacement is incomplete
+4 = Clearly identifies the failing assumption and proposes a mostly correct replacement
+5 = Excellent: identifies the failing assumption, proposes a correct replacement, \
+and explains why it resolves the contradiction
+
+Respond with ONLY a <score> tag containing your integer score. Example: <score>3</score>
+
+Problem:
+{prompt}
+
+Correct answer:
+{gold_answer}
+
+Model response:
+{response}"""
+
+
 async def judge_discovery_single(
     client: anthropic.AsyncAnthropic,
     prompt: str,
@@ -72,9 +108,10 @@ async def judge_discovery_single(
     gold_answer: str,
     model: str,
     semaphore: asyncio.Semaphore,
+    judge_prompt_template: str = DISCOVERY_JUDGE_PROMPT,
 ) -> float:
     """Score a single response against the gold answer. Returns 0.0 to 1.0."""
-    judge_input = DISCOVERY_JUDGE_PROMPT.format(prompt=prompt, response=response, gold_answer=gold_answer)
+    judge_input = judge_prompt_template.format(prompt=prompt, response=response, gold_answer=gold_answer)
     async with semaphore:
         try:
             result = await client.messages.create(
@@ -103,12 +140,13 @@ async def batch_judge_discovery(
     gold_answers: list[str],
     model: str,
     max_concurrent: int,
+    judge_prompt_template: str = DISCOVERY_JUDGE_PROMPT,
 ) -> list[float]:
     """Score a batch of prompt-response pairs concurrently against gold answers."""
     client = anthropic.AsyncAnthropic()
     semaphore = asyncio.Semaphore(max_concurrent)
     tasks = [
-        judge_discovery_single(client, p, r, g, model, semaphore)
+        judge_discovery_single(client, p, r, g, model, semaphore, judge_prompt_template)
         for p, r, g in zip(prompts, responses, gold_answers)
     ]
     return await asyncio.gather(*tasks)
@@ -161,12 +199,17 @@ parser.add_argument("--val-data", type=str, default="instruct_data/rl_problems/r
 parser.add_argument("--problems-data", type=str, default="instruct_data/rl_problems/rl_problems_train.jsonl", help="training problems with gold answers JSONL")
 parser.add_argument("--problems-val-data", type=str, default="instruct_data/rl_problems/rl_problems_val.jsonl", help="validation problems with gold answers JSONL")
 # Claude judge
+parser.add_argument("--judge-style", type=str, default="general", choices=["general", "contradiction"], help="Judge prompt style: 'general' (existing) or 'contradiction' (assumption-identification)")
 parser.add_argument("--judge-model", type=str, default="claude-sonnet-4-20250514", help="Anthropic model for correctness judging")
 parser.add_argument("--max-concurrent-api", type=int, default=20, help="max concurrent API requests per rank")
 # Output
 parser.add_argument("--output-dir", type=str, default="pre1900_discovery_rl_checkpoints", help="output checkpoints directory (relative to base dir)")
 args = parser.parse_args()
 user_config = vars(args).copy()
+
+# Select judge prompt based on --judge-style
+active_judge_prompt = CONTRADICTION_JUDGE_PROMPT if args.judge_style == "contradiction" else DISCOVERY_JUDGE_PROMPT
+
 # -----------------------------------------------------------------------------
 
 # Init compute/precision
@@ -278,6 +321,7 @@ def get_batch():
             [gold_answer] * len(generated_texts),
             args.judge_model,
             args.max_concurrent_api,
+            active_judge_prompt,
         ))
         rewards_list = [f + c for f, c in zip(format_rewards, correctness_rewards)]
 
@@ -334,6 +378,7 @@ def run_correctness_eval(task, gold_answers, tokenizer, engine, max_examples=Non
     if all_prompts:
         scores = asyncio.run(batch_judge_discovery(
             all_prompts, all_responses, all_golds, args.judge_model, args.max_concurrent_api,
+            active_judge_prompt,
         ))
     else:
         scores = []
