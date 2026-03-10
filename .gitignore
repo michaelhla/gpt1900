@@ -19,3 +19,5 @@ CLAUDE.md
 wandb/
 
 dask-*
+results/*/hf_cache/
+runs/*.log
