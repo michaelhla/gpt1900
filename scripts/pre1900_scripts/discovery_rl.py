@@ -152,6 +152,69 @@ async def batch_judge_discovery(
     return await asyncio.gather(*tasks)
 
 
+COHERENCE_JUDGE_PROMPT = """\
+You are an engagement-quality judge. Given a problem and a model's response, \
+rate how coherently the response engages with the question on a scale from 0 to 5.
+
+You are NOT judging correctness. You are judging whether the response:
+1. Actually addresses the question asked (vs continuing unrelated text)
+2. Has a logical reasoning flow (vs rambling, repeating, or nonsensical text)
+3. Attempts to analyze the problem (vs ignoring it entirely)
+
+Rubric:
+0 = Does not engage with the question at all (random text, unrelated continuation)
+1 = Barely engages — mentions a keyword but does not attempt to address the question
+2 = Partially engages but reasoning is disorganized or mostly off-topic
+3 = Addresses the question with some logical structure but has significant gaps
+4 = Clearly engages with the question and reasoning flow is mostly logical
+5 = Fully engages with the question, reasoning is well-structured and focused
+
+Respond with ONLY a <score> tag containing your integer score. Example: <score>3</score>
+
+Problem:
+{prompt}
+
+Model response:
+{response}"""
+
+
+async def batch_judge_coherence(
+    prompts: list[str],
+    responses: list[str],
+    model: str,
+    max_concurrent: int,
+) -> list[float]:
+    """Score a batch of responses for coherence/engagement quality."""
+    client = anthropic.AsyncAnthropic()
+    semaphore = asyncio.Semaphore(max_concurrent)
+
+    async def judge_one(prompt, response):
+        judge_input = COHERENCE_JUDGE_PROMPT.format(prompt=prompt, response=response)
+        async with semaphore:
+            try:
+                result = await client.messages.create(
+                    model=model,
+                    max_tokens=64,
+                    messages=[
+                        {"role": "user", "content": judge_input},
+                        {"role": "assistant", "content": "<score>"},
+                    ],
+                )
+                response_text = result.content[0].text.strip()
+                match = re.match(r"(\d)", response_text)
+                if match is None:
+                    print0(f"  Coherence judge parse error: {response_text[:100]}")
+                    return 0.0
+                score = int(match.group(1))
+                return float(max(0, min(5, score))) / 5.0
+            except Exception as e:
+                print0(f"  Coherence judge API error: {e}")
+                return 0.0
+
+    tasks = [judge_one(p, r) for p, r in zip(prompts, responses)]
+    return await asyncio.gather(*tasks)
+
+
 FORMAT_REWARD = 0.3  # partial credit for using the correct reasoning format
 
 def compute_format_reward(response: str) -> float:
@@ -202,6 +265,12 @@ parser.add_argument("--problems-val-data", type=str, default="instruct_data/rl_p
 parser.add_argument("--judge-style", type=str, default="general", choices=["general", "contradiction"], help="Judge prompt style: 'general' (existing) or 'contradiction' (assumption-identification)")
 parser.add_argument("--judge-model", type=str, default="claude-sonnet-4-20250514", help="Anthropic model for correctness judging")
 parser.add_argument("--max-concurrent-api", type=int, default=20, help="max concurrent API requests per rank")
+# v6: no-scaffold mode
+parser.add_argument("--no-scaffold", action="store_true", help="No system prompt, no format reward, completion-mode generation")
+parser.add_argument("--coherence-reward", action="store_true", help="Enable coherence reward with dynamic weighting curriculum")
+parser.add_argument("--ema-alpha", type=float, default=0.05, help="EMA smoothing factor for coherence tracking (lower = slower)")
+parser.add_argument("--min-coherence-weight", type=float, default=0.1, help="Floor for coherence weight to prevent regression")
+parser.add_argument("--fixed-coherence-weight", type=float, default=None, help="If set, use fixed coherence/correctness weights instead of EMA curriculum (e.g. 0.1 means 0.1*coherence + 0.9*correctness)")
 # Output
 parser.add_argument("--output-dir", type=str, default="pre1900_discovery_rl_checkpoints", help="output checkpoints directory (relative to base dir)")
 args = parser.parse_args()
@@ -272,8 +341,14 @@ def extract_last_user_prompt(conversation):
 # -----------------------------------------------------------------------------
 # Rollout / sampling generator loop that yields batches of examples for training
 
+bos_token = tokenizer.get_bos_token_id()
+
+# EMA state for coherence curriculum (v6)
+ema_coherence = 0.0
+
 @torch.no_grad()
 def get_batch():
+    global ema_coherence
     assistant_end = tokenizer.encode_special("<|assistant_end|>")
     rank_indices = range(ddp_rank, len(train_task), ddp_world_size)
     for example_idx in itertools.cycle(rank_indices):
@@ -281,9 +356,13 @@ def get_batch():
         # Get the full conversation and gold answer
         conversation = train_task[example_idx]
         gold_answer = train_gold_answers[example_idx]
+        prompt_text = extract_last_user_prompt(conversation)
 
-        # Tokenize, deleting the last Assistant message and priming for completion
-        tokens = tokenizer.render_for_completion(conversation)
+        # Tokenize: completion mode (no-scaffold) or chat mode
+        if args.no_scaffold:
+            tokens = tokenizer.encode(prompt_text, prepend=bos_token)
+        else:
+            tokens = tokenizer.render_for_completion(conversation)
         prefix_length = len(tokens)
 
         # Generate num_samples samples using batched generation
@@ -306,24 +385,62 @@ def get_batch():
             masks.extend(masks_batch)
 
         # Decode all generated texts
-        prompt_text = extract_last_user_prompt(conversation)
         generated_texts = []
         for sample_tokens in generated_token_sequences:
             generated_tokens = sample_tokens[prefix_length:]
             generated_text = tokenizer.decode(generated_tokens)
             generated_texts.append(generated_text)
 
-        # Score all samples: format reward (local) + correctness reward (Claude judge)
-        format_rewards = [compute_format_reward(text) for text in generated_texts]
-        correctness_rewards = asyncio.run(batch_judge_discovery(
-            [prompt_text] * len(generated_texts),
-            generated_texts,
-            [gold_answer] * len(generated_texts),
-            args.judge_model,
-            args.max_concurrent_api,
-            active_judge_prompt,
-        ))
-        rewards_list = [f + c for f, c in zip(format_rewards, correctness_rewards)]
+        # Score all samples: format reward + correctness reward (+ optional coherence reward)
+        if args.no_scaffold:
+            format_rewards = [0.0] * len(generated_texts)  # no format reward in no-scaffold mode
+        else:
+            format_rewards = [compute_format_reward(text) for text in generated_texts]
+
+        # Judge correctness (and optionally coherence) concurrently
+        if args.coherence_reward:
+            async def judge_both():
+                correctness_task = batch_judge_discovery(
+                    [prompt_text] * len(generated_texts),
+                    generated_texts,
+                    [gold_answer] * len(generated_texts),
+                    args.judge_model,
+                    args.max_concurrent_api,
+                    active_judge_prompt,
+                )
+                coherence_task = batch_judge_coherence(
+                    [prompt_text] * len(generated_texts),
+                    generated_texts,
+                    args.judge_model,
+                    args.max_concurrent_api,
+                )
+                return await asyncio.gather(correctness_task, coherence_task)
+            correctness_rewards, coherence_rewards = asyncio.run(judge_both())
+
+            if args.fixed_coherence_weight is not None:
+                # v7: Fixed weighting — correctness drives learning, coherence prevents collapse
+                coherence_weight = args.fixed_coherence_weight
+                correctness_weight = 1.0 - args.fixed_coherence_weight
+            else:
+                # v6: Dynamic EMA weighting curriculum
+                batch_mean_coherence = sum(coherence_rewards) / len(coherence_rewards)
+                ema_coherence = (1 - args.ema_alpha) * ema_coherence + args.ema_alpha * batch_mean_coherence
+                coherence_weight = max(args.min_coherence_weight, 1.0 - ema_coherence)
+                correctness_weight = ema_coherence
+            rewards_list = [
+                f + coherence_weight * coh + correctness_weight * cor
+                for f, coh, cor in zip(format_rewards, coherence_rewards, correctness_rewards)
+            ]
+        else:
+            correctness_rewards = asyncio.run(batch_judge_discovery(
+                [prompt_text] * len(generated_texts),
+                generated_texts,
+                [gold_answer] * len(generated_texts),
+                args.judge_model,
+                args.max_concurrent_api,
+                active_judge_prompt,
+            ))
+            rewards_list = [f + c for f, c in zip(format_rewards, correctness_rewards)]
 
         # Pad sequences so their lengths match
         max_length = max(len(seq) for seq in generated_token_sequences)
@@ -357,7 +474,11 @@ def run_correctness_eval(task, gold_answers, tokenizer, engine, max_examples=Non
     for idx in range(ddp_rank, max_examples, ddp_world_size):
         conversation = task[idx]
         gold_answer = gold_answers[idx]
-        tokens = tokenizer.render_for_completion(conversation)
+        if args.no_scaffold:
+            prompt_text = extract_last_user_prompt(conversation)
+            tokens = tokenizer.encode(prompt_text, prepend=bos_token)
+        else:
+            tokens = tokenizer.render_for_completion(conversation)
         prefix_length = len(tokens)
         # Generate a single sample for evaluation
         generated_token_sequences, masks = engine.generate_batch(
@@ -383,6 +504,128 @@ def run_correctness_eval(task, gold_answers, tokenizer, engine, max_examples=Non
     else:
         scores = []
     return scores
+
+
+# -----------------------------------------------------------------------------
+# Online physics eval (EVAL.json)
+
+eval_json_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "EVAL.json")
+if os.path.exists(eval_json_path):
+    with open(eval_json_path) as f:
+        _eval_config = json.load(f)
+    _physics_eval_tasks = _eval_config["tasks"]
+    print0(f"Loaded {len(_physics_eval_tasks)} physics eval tasks from EVAL.json")
+else:
+    _eval_config = None
+    _physics_eval_tasks = []
+    print0("EVAL.json not found, skipping physics eval")
+
+
+def _build_physics_judge_prompt(eval_config, task, response):
+    """Build a judge prompt for one EVAL.json task, returning a single string for the async judge."""
+    checklist = "\n".join(f"- {item}" for item in eval_config["shared_judge_checklist"])
+    rules = "\n".join(f"- {item}" for item in eval_config["shared_judge_rules"])
+    expected = "\n".join(f"- {c}" for c in task["expected_core_concepts"])
+    rubric_lines = "\n".join(f"  {k}: {v}" for k, v in task["scoring_rubric"].items())
+    prompt_text = "\n".join(task["prompt_lines"])
+
+    return (
+        f"{eval_config['shared_judge_prompt']}\n\n"
+        f"Checklist:\n{checklist}\n\n"
+        f"Rules:\n{rules}\n\n"
+        f"## Original Prompt\n{prompt_text}\n\n"
+        f"## Judge Focus\n{task['judge_focus']}\n\n"
+        f"## Expected Core Concepts\n{expected}\n\n"
+        f"## Scoring Rubric\n{rubric_lines}\n\n"
+        f"## Model Response\n{response}\n\n"
+        f"Respond with ONLY a <score> tag containing your integer score (0-5). Example: <score>3</score>"
+    )
+
+
+async def _judge_physics_eval_batch(prompts_and_responses, eval_config, tasks, model_name, max_concurrent):
+    """Judge a batch of (task, response) pairs. Returns list of scores (0-5 scale, not normalized)."""
+    client = anthropic.AsyncAnthropic()
+    semaphore = asyncio.Semaphore(max_concurrent)
+
+    async def judge_one(task, response):
+        judge_input = _build_physics_judge_prompt(eval_config, task, response)
+        async with semaphore:
+            try:
+                result = await client.messages.create(
+                    model=model_name,
+                    max_tokens=64,
+                    messages=[
+                        {"role": "user", "content": judge_input},
+                        {"role": "assistant", "content": "<score>"},
+                    ],
+                )
+                response_text = result.content[0].text.strip()
+                match = re.match(r"(\d)", response_text)
+                if match is None:
+                    return 0.0
+                return float(max(0, min(5, int(match.group(1)))))
+            except Exception as e:
+                print0(f"  Physics eval judge error: {e}")
+                return 0.0
+
+    judge_tasks = [judge_one(t, r) for t, r in prompts_and_responses]
+    return await asyncio.gather(*judge_tasks)
+
+
+def run_physics_eval(tokenizer, engine, max_tokens=2048, temperature=0.7, top_k=50):
+    """Run EVAL.json physics eval on rank 0 only. Returns dict of task_id -> score (0-5)."""
+    if not _physics_eval_tasks or _eval_config is None:
+        return {}
+    if ddp_rank != 0:
+        return {}
+
+    model.eval()
+    prompts_and_responses = []
+    task_ids = []
+
+    for task in _physics_eval_tasks:
+        prompt_text = "\n".join(task["prompt_lines"])
+        if args.no_scaffold:
+            tokens = tokenizer.encode(prompt_text, prepend=bos_token)
+        else:
+            conversation = {
+                "messages": [
+                    {"role": "user", "content": prompt_text},
+                    {"role": "assistant", "content": ""},
+                ]
+            }
+            tokens = tokenizer.render_for_completion(conversation)
+        prefix_length = len(tokens)
+
+        with autocast_ctx:
+            generated_seqs, _ = engine.generate_batch(
+                tokens, num_samples=1, max_tokens=max_tokens,
+                temperature=temperature, top_k=top_k,
+            )
+        gen_text = tokenizer.decode(generated_seqs[0][prefix_length:])
+        prompts_and_responses.append((task, gen_text))
+        task_ids.append(task["id"])
+
+    # Judge all responses
+    scores = asyncio.run(_judge_physics_eval_batch(
+        prompts_and_responses, _eval_config, _physics_eval_tasks,
+        args.judge_model, args.max_concurrent_api,
+    ))
+
+    return {tid: s for tid, s in zip(task_ids, scores)}
+
+
+# Short names for wandb logging
+_TASK_SHORT_NAMES = {
+    "uv_catastrophe_main": "UV",
+    "photoelectric_effect_main": "Photo",
+    "sr_frozen_light": "Frozen",
+    "sr_approaching_c": "ApprC",
+    "sr_train_lightning": "Train",
+    "sr_michelson_morley": "MM",
+    "gr_main_elevator_light": "Elev",
+    "gr_free_fall_equivalence": "Fall",
+}
 
 
 # -----------------------------------------------------------------------------
@@ -434,6 +677,23 @@ for step in range(num_steps):
             "eval/correctness_score": mean_correctness,
         })
 
+    # Physics eval (EVAL.json) — once per epoch (aligned with save_every)
+    if _physics_eval_tasks and step % args.save_every == 0:
+        model.eval()
+        with autocast_ctx:
+            physics_scores = run_physics_eval(tokenizer, engine, max_tokens=args.max_new_tokens)
+        if physics_scores:
+            physics_log = {"step": step}
+            all_scores = []
+            for tid, score in physics_scores.items():
+                short = _TASK_SHORT_NAMES.get(tid, tid[:6])
+                physics_log[f"physics_eval/{short}"] = score
+                all_scores.append(score)
+                print0(f"  Physics eval {short}: {score:.1f}/5")
+            physics_log["physics_eval/mean"] = sum(all_scores) / len(all_scores)
+            print0(f"  Physics eval mean: {physics_log['physics_eval/mean']:.2f}/5")
+            wandb_run.log(physics_log)
+
     # Forward/Backward on rollouts over multiple examples
     rewards_list = []
     sequence_lengths = []
@@ -471,11 +731,20 @@ for step in range(num_steps):
         mean_reward = mean_reward_tensor.item()
         mean_sequence_length = mean_sequence_length_tensor.item()
     print0(f"Step {step}/{num_steps} | Average reward: {mean_reward} | Average sequence length: {mean_sequence_length:.2f}")
-    wandb_run.log({
+    log_dict = {
         "step": step,
         "reward": mean_reward,
         "sequence_length": mean_sequence_length,
-    })
+    }
+    if args.coherence_reward:
+        if args.fixed_coherence_weight is not None:
+            log_dict["reward/coherence_weight"] = args.fixed_coherence_weight
+            log_dict["reward/correctness_weight"] = 1.0 - args.fixed_coherence_weight
+        else:
+            log_dict["reward/ema_coherence"] = ema_coherence
+            log_dict["reward/coherence_weight"] = max(args.min_coherence_weight, 1.0 - ema_coherence)
+            log_dict["reward/correctness_weight"] = ema_coherence
+    wandb_run.log(log_dict)
 
     # Update model parameters
     lrm = get_lr_multiplier(step)
