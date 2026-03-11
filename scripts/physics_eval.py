@@ -56,6 +56,18 @@ CHECKPOINTS = [
     Checkpoint("discovery-rl-v5-s060", "local", 60,  "chat"),
     Checkpoint("discovery-rl-v5-s090", "local", 90,  "chat"),
     Checkpoint("discovery-rl-v5-s104", "local", 104, "chat"),
+    Checkpoint("discovery-rl-v6-s035", "local", 35,  "completion"),
+    Checkpoint("discovery-rl-v6-s070", "local", 70,  "completion"),
+    Checkpoint("discovery-rl-v6-s105", "local", 105, "completion"),
+    Checkpoint("discovery-rl-v6-s140", "local", 140, "completion"),
+    Checkpoint("discovery-rl-v6-s175", "local", 175, "completion"),
+    Checkpoint("discovery-rl-v6-s210", "local", 210, "completion"),
+    Checkpoint("discovery-rl-v6-s245", "local", 245, "completion"),
+    Checkpoint("discovery-rl-v6-s280", "local", 280, "completion"),
+    Checkpoint("discovery-rl-v6-s315", "local", 315, "completion"),
+    Checkpoint("discovery-rl-v6-s350", "local", 350, "completion"),
+    Checkpoint("discovery-rl-v6-s385", "local", 385, "completion"),
+    Checkpoint("discovery-rl-v6-s419", "local", 419, "completion"),
 ]
 
 
