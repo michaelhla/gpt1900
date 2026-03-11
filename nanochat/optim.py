@@ -37,9 +37,10 @@ def adamw_step_fused(
     """
     # Weight decay (decoupled, applied before the update)
     p.mul_(1 - lr_t * wd_t)
-    # Update running averages (lerp_ is cleaner and fuses well)
-    exp_avg.lerp_(grad, 1 - beta1_t)
-    exp_avg_sq.lerp_(grad.square(), 1 - beta2_t)
+    # Update running averages
+    # Note: manual mul_/add_ instead of lerp_ for torch 2.9+ dtype strictness
+    exp_avg.mul_(beta1_t).add_(grad, alpha=1 - beta1_t)
+    exp_avg_sq.mul_(beta2_t).add_(grad.square(), alpha=1 - beta2_t)
     # Bias corrections
     bias1 = 1 - beta1_t ** step_t
     bias2 = 1 - beta2_t ** step_t
@@ -427,6 +428,9 @@ class DistMuonAdamW(torch.optim.Optimizer):
                 state['exp_avg'] = torch.zeros_like(p_slice)
                 state['exp_avg_sq'] = torch.zeros_like(p_slice)
             state['step'] += 1
+
+            # Ensure grad dtype matches param/state dtype (torch 2.9+ lerp_ is strict)
+            grad_slice = grad_slice.to(dtype=p_slice.dtype)
 
             # Fill 0-D tensors and run fused kernel
             self._adamw_step_t.fill_(state['step'])
