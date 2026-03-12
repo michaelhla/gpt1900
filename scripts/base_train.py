@@ -46,6 +46,7 @@ parser.add_argument("--device-type", type=str, default="", help="cuda|cpu|mps (e
 parser.add_argument("--fp8", action="store_true", help="enable FP8 training (requires H100+ GPU and torchao)")
 parser.add_argument("--fp8-recipe", type=str, default="tensorwise", choices=["rowwise", "tensorwise"], help="FP8 scaling recipe: tensorwise (faster, recommended) or rowwise (more accurate but slower)")
 parser.add_argument("--activation-checkpointing", action="store_true", help="enable activation checkpointing to reduce memory (trades compute for memory)")
+parser.add_argument("--fsdp", action="store_true", help="enable FSDP2 (ZeRO-3) for large model training. Uses AdamW instead of Muon.")
 # Model architecture
 parser.add_argument("--depth", type=int, default=20, help="depth of the Transformer model")
 parser.add_argument("--aspect-ratio", type=int, default=64, help="model_dim = depth * aspect_ratio")
@@ -239,10 +240,29 @@ def disable_fp8(model):
             setattr(parent, attr_name, fp8_module)
 
 # -----------------------------------------------------------------------------
+# FSDP2 wrapping (must happen after FP8 conversion, before torch.compile)
+
+if args.fsdp:
+    assert ddp, "FSDP requires distributed launch (torchrun)"
+    # FSDP requires uniform param dtype — cast everything to bf16
+    model.to(dtype=torch.bfloat16)
+    # Note: model's internal activation checkpointing (use_checkpoint, set above) works with
+    # FSDP2 since torch.utils.checkpoint calls block.forward() which triggers FSDP's hooks.
+    from torch.distributed.fsdp import fully_shard, MixedPrecisionPolicy
+    mp_policy = MixedPrecisionPolicy(param_dtype=torch.bfloat16, reduce_dtype=torch.bfloat16)
+    for block in model.transformer.h:
+        fully_shard(block, mp_policy=mp_policy)
+    fully_shard(model, mp_policy=mp_policy)
+    print0(f"✓ FSDP2 enabled: model sharded across {ddp_world_size} ranks")
+
+# -----------------------------------------------------------------------------
 # Compile the model
 
 orig_model = model # original, uncompiled model, for saving raw model state_dict and for inference/evaluation (because the shapes may change shape)
-model = torch.compile(model, dynamic=False) # the inputs to model will never change shape so dynamic=False is safe
+if not args.fsdp:
+    model = torch.compile(model, dynamic=False) # the inputs to model will never change shape so dynamic=False is safe
+else:
+    print0("Skipping torch.compile (not yet compatible with FSDP2 DTensor)")  # TODO: revisit with future PyTorch
 
 # -----------------------------------------------------------------------------
 # Scaling laws and muP extrapolations to determine the optimal training horizon, batch size, learning rates, weight decay.
@@ -303,17 +323,35 @@ if weight_decay_scaled != args.weight_decay:
     print0(f"Scaling weight decay from {args.weight_decay:.6f} to {weight_decay_scaled:.6f} for depth {args.depth}")
 
 # -----------------------------------------------------------------------------
-# Initialize the Optimizer (combined MuonAdamW: Muon for matrix params, AdamW for rest)
-optimizer = model.setup_optimizer(
-    # AdamW hyperparameters
-    unembedding_lr=args.unembedding_lr * batch_lr_scale,
-    embedding_lr=args.embedding_lr * batch_lr_scale,
-    scalar_lr=args.scalar_lr * batch_lr_scale,
-    adam_betas=(args.adam_beta1, args.adam_beta2),
-    # Muon hyperparameters
-    matrix_lr=args.matrix_lr * batch_lr_scale,
-    weight_decay=weight_decay_scaled,
-)
+# Initialize the Optimizer
+if args.fsdp:
+    # FSDP mode: use standard AdamW (Muon requires full weight matrices for orthogonalization)
+    model_dim = model_config.n_embd
+    dmodel_lr_scale = (model_dim / 768) ** -0.5
+    param_groups = [
+        dict(kind='adamw', params=list(model.lm_head.parameters()), lr=args.unembedding_lr * batch_lr_scale * dmodel_lr_scale, weight_decay=0.0),
+        dict(kind='adamw', params=list(model.transformer.wte.parameters()), lr=args.embedding_lr * batch_lr_scale * dmodel_lr_scale, weight_decay=0.0),
+        dict(kind='adamw', params=list(model.value_embeds.parameters()), lr=args.embedding_lr * batch_lr_scale * dmodel_lr_scale, weight_decay=0.0),
+        dict(kind='adamw', params=[model.resid_lambdas], lr=args.scalar_lr * batch_lr_scale * 0.01, weight_decay=0.0),
+        dict(kind='adamw', params=[model.x0_lambdas], lr=args.scalar_lr * batch_lr_scale, weight_decay=0.0),
+        dict(kind='adamw', params=list(model.transformer.h.parameters()), lr=args.matrix_lr * batch_lr_scale, weight_decay=weight_decay_scaled),
+    ]
+    optimizer = torch.optim.AdamW(param_groups, betas=(args.adam_beta1, args.adam_beta2), eps=1e-10)
+    for group in optimizer.param_groups:
+        group["initial_lr"] = group["lr"]
+    print0(f"✓ Using AdamW optimizer (FSDP mode)")
+else:
+    # Standard mode: combined MuonAdamW (Muon for matrix params, AdamW for rest)
+    optimizer = model.setup_optimizer(
+        # AdamW hyperparameters
+        unembedding_lr=args.unembedding_lr * batch_lr_scale,
+        embedding_lr=args.embedding_lr * batch_lr_scale,
+        scalar_lr=args.scalar_lr * batch_lr_scale,
+        adam_betas=(args.adam_beta1, args.adam_beta2),
+        # Muon hyperparameters
+        matrix_lr=args.matrix_lr * batch_lr_scale,
+        weight_decay=weight_decay_scaled,
+    )
 
 if resuming and not args.resume_weights_only:
     optimizer.load_state_dict(optimizer_data)
@@ -462,11 +500,17 @@ while True:
 
     # save checkpoint: at the end of the run, or every save_every steps, except at the first step or the resume step
     if last_step or (step > 0 and step != args.resume_from_step and args.save_every > 0 and step % args.save_every == 0):
+        # Get model state dict: FSDP needs special handling to gather full state on rank 0
+        if args.fsdp:
+            from torch.distributed.checkpoint.state_dict import get_model_state_dict, StateDictOptions
+            model_sd = get_model_state_dict(orig_model, options=StateDictOptions(full_state_dict=True))
+        else:
+            model_sd = orig_model.state_dict()
         save_checkpoint(
             checkpoint_dir,
             step,
-            orig_model.state_dict(), # model parameters
-            optimizer.state_dict(), # optimizer state
+            model_sd, # model parameters
+            optimizer.state_dict(), # optimizer state (per-rank for both FSDP and DistMuonAdamW)
             { # metadata saved as json
                 "step": step,
                 "val_bpb": val_bpb, # loss at last step
