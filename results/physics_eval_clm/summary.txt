@@ -1,0 +1,6 @@
+                           UV   Photo  Frozen   ApprC   Train      MM    Elev    Fall  | Mean
+physics-clm-s004800       0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0  | 0.00
+physics-clm-s009600       0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0  | 0.00
+physics-clm-s014400       0.0     0.0     0.0     0.0     0.0     0.0     0.3     0.0  | 0.04
+physics-clm-s019200       0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0  | 0.00
+physics-clm-s024000       0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.3  | 0.04

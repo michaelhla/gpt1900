@@ -1,0 +1,890 @@
+{
+  "discovery-rl-v7-s035": {
+    "uv_catastrophe_main": {
+      "prompt": "A heated cavity in thermal equilibrium emits radiation with spectral energy density u(nu, T), where nu is frequency and T is temperature.\n\nObserved facts:\n1. At low frequencies, the emitted energy density increases with frequency.\n2. For each temperature, the spectrum reaches a maximum at some frequency.\n3. At higher frequencies, the emitted energy density falls off rapidly toward zero.\n4. The total emitted energy is finite.\n5. As temperature increases, the peak shifts to higher frequency and the total emitted energy increases.\n\nClassical assumptions under consideration:\n1. The electromagnetic field in the cavity can be decomposed into modes.\n2. The number of modes in a frequency interval grows roughly like nu^2.\n3. If energy is continuous and ordinary thermal equipartition holds, each mode should have mean energy kT.\n\nUnder those assumptions, the predicted spectral energy density grows like:\nu_classical(nu, T) \u221d nu^2 T\n\nThis prediction keeps increasing with frequency and leads to an infinite total energy, in contradiction with experiment.\n\nWhich assumption is most likely wrong? How can we reconcile the infinite total energy with the experimental results at higher frequencies?",
+      "mode": "completion",
+      "completions": [
+        "",
+        "\nIt is not easy to find an answer which accords with all the facts. But this much is plain:\nn^2 is infinitely greater than n^2.",
+        "\nThe above results are taken from the first book of the Encyclop\u00e6dia Britannica, published 1851. Since then, many improvements have been made in thermodynamic theories. Nevertheless, the fact remains that the theory is a creation of the 19th century.\n\nTheorem III, Chapter XII,\n\nThe total energy of a cavity is constant in any state of the medium."
+      ]
+    },
+    "photoelectric_effect_main": {
+      "prompt": "Experimental observations:\n1. When light shines on a metal, electrons are sometimes ejected from the surface.\n2. Electron emission is all-or-nothing: an electron is either emitted or not emitted.\n3. Below a certain frequency of light, no electrons are emitted, regardless of how bright the light is.\n4. Above that threshold frequency, electrons are emitted.\n5. Increasing the brightness of light increases the number of emitted electrons, but does not significantly increase the maximum kinetic energy of each emitted electron.\n6. Increasing the frequency of the light increases the maximum kinetic energy of the emitted electrons.\n7. Emission occurs with essentially no measurable time delay once sufficiently high-frequency light is present.\n\nClassical assumptions under consideration:\n1. Light is a continuous wave.\n2. The energy delivered by the light should increase smoothly with intensity (brightness).\n3. A more intense wave should transfer more energy to an electron.\n4. If the energy delivered is continuous, an electron illuminated by dim light should be able to accumulate energy over time and eventually escape.\n\nThese classical expectations do not match the observations.\n\nWhich assumption is most likely wrong? What can explain this all or nothing threshold requirement?",
+      "mode": "completion",
+      "completions": [
+        " It is clear that it is not the heat content of the metal. All we know of the nature of the heat content of metals leads to the opposite conclusion. It is not the density of the atoms. No one knows what the density of atoms is. It is not the polarization of the ions. That is unknown. It is not the elastic quality of the molecules. That is equally indefinite. But it is the kinetic energy of the molecules themselves that is not now accessible. If we did know how much the kinetic energy of an atom is, we could tell whether this assumption of a continuous wave is warranted or not. But we do not know how much the kinetic energy of the molecules is. The all-or-nothing assumption is therefore not warranted.\n\nSo far, then, we have not found any assumption warranted by physical principles that throws light on the all-or-nothing threshold.\n\nWhat is the other side of this subject? It is not always easy to treat the all-or-nothing assumption in the abstract as if it were only a form of the kinetic theory of gases. However, the assumption is now quite generally given up as an impossible error, and I have not found anywhere an attempt to explain how it is that light is not a continuous electrical wave, and that the assumption is warranted.\n\nThe kinetic theory of gases is probably responsible for the failure to explain how light is not a continuous wave. It is sometimes assumed that the kinetic energy of a gas is proportional to its total volume. The first volume is regarded as a kind of measurable thing; the second is not so regarded. The mean kinetic energy of a gas for mean total volume is assumed to be zero. This is made the all-or-nothing assumption of the kinetic theory of gases.",
+        " \nSee also Nos. 44, 75, 79, 81, 83, 86, 91, 95, 96, 105, 106, 111, 112, 113, 115, 116, 117, 118, 119, 120, 121, 122, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 150, 151, 152, 153, 154, 156, 157, 158, 159, 160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180, 181, 182, 183, 184, 185, 186, 187, 188, 189, 190, 191, 192, 193, 194, 195, 196, 197, 198, 199, 200, 201, 202, 203, 204, 205, 206, 207, 208, 210, 211, 212, 213, 214, 215, 216, 217, 218, 219, 220, 221, 222, 223, 224, 225, 226, 227, 228, 229, 230, 231, 232, 233, 234, 235, 236, 237, 238, 239, 240, 241, 242, 243, 244, 245, 246, 247, 248, 249, 250, 251, 252, 253, 254, 255, 256, 257, 258, 259, 260, 261, 262, 263, 264, 265, 266, 267, 268, 269, 270, 271, 272, 273, 274, 275, 276, 277, 278, 279, 280, 281, 282, 283, 284, 285, 286, 287, 288, 289, 290, 291, 292, 293, 294, 295, 296, 297, 298, 299, 300, 301, 302, 303, 304, 305, 306, 307, 308, 309, 310, 311, 312, 313, 314, 315, 316, 317, 318, 319, 320, 321, 322, 323, 324, 325, 326, 327, 328, 329, 330, 331, 332, 333, 334, 335, 336, 337, 338, 339, 340, 341, 342, 343, 344, 345, 346, 347, 348, 349, 350, 351, 352, 353, 354, 355, 356, 357, 358, 359, 360, 361",
+        " Not the mechanical theory of heat, for the specific heat of any kind of matter is not the same at all distances of the same medium. Not the wave-theory, for the energy delivered by any wave is not the same for all wave-lengths: the same is true of the energy that can be generated by increasing the luminous intensity. Not the magnetic theory, for the specific magnetic energy is not the same at all distances of the same medium. Not any theory; and yet the explanation of the all-or-naught requirement is ready.\n\nBy a well-known mechanical principle, the energy deliverable by a moving mass to an electron is inversely proportional to the velocity. By a better-known principle, the kinetic energy of a moving mass is inversely proportional to the mass's square root. With this principle in mind, the following mathematical calculations have been made:\n\nLet us take a small bit of a moving mass, and suppose it to carry its energy in the form of a continuous wave. Suppose the velocity of the mass to be 1. Then the energy deliverable by the wave will be 1/(1+sqrt/1 + sqn. 2). The velocity of the mass will be 2sqft+ft. The energy deliverable by the wave will therefore be:\n\n(24)\n\nThe electron will be found at the threshold 1/sqrt + sqn. 2. That is, there is no electron at the threshold, but on the mass's moving away, and passing beyond the threshold, the electron instantly appears."
+      ]
+    },
+    "sr_frozen_light": {
+      "prompt": "Suppose light is an electromagnetic wave governed by Maxwell\u2019s equations, and suppose also that all inertial observers measure light in vacuum to have the same speed c.\n\nNow consider an observer trying to move alongside a light beam.\n\nUnder ordinary velocity addition, one might expect the observer to see the light wave as stationary or nearly frozen.\n\nWould a frozen light wave make sense?",
+      "mode": "completion",
+      "completions": [
+        " (See footnote on p. 30.)\n\nI think not.\n\nI think we should expect that the observer would see the beam moving, but that it would not be in the same direction as he.\n\nNo doubt he would see this, but he would also see that the beam was moving and would feel that he was moving with it.\n\nI think that this would be the case even if he had not any knowledge of Maxwell\u2019s theory.\n\nOf course it would be quite different if he had.\n\nHe would see the beam moving, and would feel that he was moving with it.\n\nHe would also feel that he was moving towards a source of danger.\n\nHe would be moving in the direction of danger, and towards a source of danger.\n\nHe would feel this whether he saw the beam moving or not.\n\nBut if he saw it moving, though he might not be able to say how, he would probably feel that he was part of it moving, and that he was progressing with it.\n\nHe would perhaps feel this, even if he did not know Maxwell\u2019s theory.\n\nIn fact, he would feel that he was moving with the beam, and that he was progressing with it.\n\nThat is, he would feel that he was moving with the beam as a whole, and, if he were a scientific observer, would probably feel that he was moving with the same velocity as it.\n\nHe would not know the differential equations, but he would feel that he was moving with the beam.\n\nHe would probably also feel that he was moving in the direction of danger, and that he was exposing himself to danger.\n\nHe would also feel that he was moving in the direction of danger, though he might not be able to say how, and that he was moving towards a source of danger.",
+        " Could it be made visible?\n\nYes, if it were so arranged that the observer could not see it from a distance, and could not see from his freezing point to a distance.\n\nCould he see it from a point so far off that its apparent momentum should be insensible?\n\nHe could.\n\nSuppose then that the light wave is actually frozen to his freezing point, and that he can not see it from a distance, what must he do to get sense out of the fact?\n\nHe must move slowly, and then he will see the beam steadily, but not rapidly.\n\nWhen he sees it rapidly he must stop, and he will see it as a moving luminous point.\n\nIn vacuum this would be impossible, but we do not require a vacuum to explain our present problem.\n\nSuppose then that in place of a light beam moving slowly towards the observer, there is a moving luminous point which comes to him as a frozen beam.\n\nIs it not clear that the motions which produce vision are now entirely governed by Maxwell\u2019s equations, and by Maxwell\u2019s theory of the relation between inertia and wave motion?\n\nNot at all. We must still suppose the same inertial observer to see the beam moving towards him as if it were a moving luminous point, and to see it moving away from him as if it were a moving luminous point.\n\nSuppose that before he sees it he puts a stop to its motions by stopping his moving point, what will be the consequence?\n\nThe light beam will not move away from him at all, but he will see it move towards him.\n\nWhy?\n\nBecause the motions of the light beam are now governed solely by Maxwell\u2019s equations, and by his theory of the relation between inertia and wave motion.\n\nBut before it can move away he must stop it, and this must be done in such a way as to stop it at his point of freezing.\n\nHe must, because the moving point does not move in the direction of the beam, but in a direction making a larger angle with it, and a larger angle with the beam\u2019s line of motion.\n\nHis point of freezing is therefore the point of zero wave motion, and his point of vision is a point of zero wave displacement.\n\nBut he does not see the beam as a moving point, but as a moving point at his point of freezing.\n\nHow can he see it moving as a moving point at his point of freezing, when he does not see it moving in the direction of the beam?\n\nHe does see it so moving, because he does not move his point of freezing with the beam, but remains stationary himself.\n\nWhat is the use of this?\n\nIt is a beautiful exemplification of the fact that the motion which the observer sees is still governed by Maxwell\u2019s equations, and by his theory of the relation between inertia and the wave motion of light.\n\nBut is not this a mere verbal evasion of the real point of difference between the theory of M. and the fact of the frozen light?\n\nNo, it is not.",
+        " Would it shew signs of periodic displacement to the observer on one side of it?\n\nThe answer to this question depends on the nature of the light beam in question.\n\nIf it be a homogeneous rotating beam, the light on opposite sides of the beam ought to move with different rates of speed.\n\nIf the beam be circular, there ought to be a similar difference of speed on the two radii.\n\nIf the beam be a parabolic reflector, there ought to be a similar difference of speed on the two radii.\n\nIf the beam be a logarithmic spiral, there ought to be a similar difference of speed on the two radii.\n\nIf the beam be a plane rectilinear reflector, there is no reason why the speed should not vary on the two sides of the beam, and there ought to be a similar difference of speed on the two radii.\n\nIn fact, there ought to be two different speeds on opposite sides of the beam.\n\nThere are no such differences of speed, and a frozen light wave would not make sense.\n\nLet us suppose that the beam is a very long one, and that the difference of speed on opposite sides is sensibly uniform.\n\nIf we suppose the molecules of the beam to be all of the same material, the difference of speed on opposite sides may be taken as uniform, and then we can suppose the light to be frozen into one uniform moving beam.\n\nThis is the simplest supposition possible, and the only one allowable. Let us suppose the light to be frozen into a homogeneous beam, and let us see what this will do.\n\nAt any point let there be a small electromagnetic field, and let us suppose that the moment of the field on that point is infinite.\n\nLet us suppose that the light beam is a medium which will not conduct light, so that its particles are not in any way disturbed by the field.\n\nLet us also suppose that the light beam has no motion of rotation.\n\nThen at every point where there is no field there is no light beam.\n\nAnd if we imagine that the light beam has no motion of rotation, then at every point where there is no field there will be no light beam.\n\nThe two parts of this theorem are true, whether the beam be homogeneously material or whether it be a geometrical solid.\n\nIf we suppose the material to be a straight line, it will have no motion of rotation, and will not be in electrical equilibrium.\n\nIf we suppose the material to be a sphere of radius a, it will have no motion of rotation, and will not be in electrical equilibrium."
+      ]
+    },
+    "sr_approaching_c": {
+      "prompt": "Suppose there exists a universal speed c that no material object can exceed.\n\nIn ordinary mechanics, applying more force for longer keeps increasing speed.\n\nAs an object approaches c, and the force is constantly applied, what happens to the object? Where does this additional energy go?",
+      "mode": "completion",
+      "completions": [
+        " Is it simply lost, or is it again useful? The answer to this question is found in the doctrine of Conservation of Force.\n\nWe have here got beyond the region of mere sensation. We can demonstrate by our senses that if a force is constant, it is simply lost if applied to a variable object.\n\nWe have now to consider the nature of the force c, or the effect of it in nature.\n\nIn ordinary mechanics the force is measured by the rate of increase of the whole mass moved. Thus if a stone falls to the ground, we say that the force is one ounce, which is the rate of increase of the stone's mass; but if a cannon-ball is fired, we say it has a two-foot, a three-foot, a ten-pound, or a twenty-pound charge, which means that it has a certain rate of increase of mass by which it can move a certain weight.\n\nThe force c may be a million or a million of millions of these charges; it is the same quantity whether it is a million or a million millions of charges; but in ordinary mechanics we measure it by the first number.\n\nNow, as we have seen, the quantity of heat produced by the motion of a material object is measured by the number of units of heat which the object gains by that motion, so also the quantity of motion produced by the same cause is measured by the same number of units.\n\nThe case is different when the object is not a material one, but a mental image of one.\n\nHere we have a speed which is not limited to time or space, and which is certainly produced by motion: what is this speed? Is it matter at all? If so, what is matter? Is it the same thing as electricity? If so, what is electricity? What can be the cause of this speed?\n\nThis speed is called Thought or Mind: its intensity is called Thought or Mind: its quantity is called Thought or Mind.\n\nWe have now to consider the fact that all these mental images are produced by the motion of the brain, and that they succeed each other with perfect regularity.\n\nThis shows that the principle of Conservation of Force is concerned in producing this regularity.\n\nIt is proved by daily experience that the rate of production of matter is one pound for every other pound of matter that is added; so also for the mind, if it continues to act.",
+        " There is no place where it does not do something. It goes to the muscles, it goes to the heart, it goes to the nerves, it goes to the brain, and does work. You can see this by the illustration of the clock-weight. It is not in one place; it is in every part of the clock. But this cannot be said of the force in the molecules of a body. You cannot apply force to a body so as to make it pass through a hole into the other room, or through a plug, or through a hole in the door. What is the result? You keep on adding force, and the speed does not rise, but it is kept up by the waste of material in the body. But this is not all. You can put this material in motion by means of machinery, and you cannot keep up the speed of motion so long as there is a wear and tear. But if you can find machinery that is kept up by a speed c, and that is incapable of doing work, then for every horse-power added to the speed, you will get an extra horse-power.\n\nThis is the grand and glorious feature of the steam-engine. It does not require a steam-engine to tell you that. You can easily see for yourselves, by a little consideration, that if a little steam is shut up in a vessel, and a piston is put into the vessel, and is then suddenly jerked out again, it will do work. The steam will do something. It will pass through the little valve, and will get out into the air. It will be converted into heat. But it will not go on working indefinitely at the work which you saw just now, of carrying this weight up to the ceiling. It will gradually waste away. It will be converted into water. Now, that is exactly what the steam does in the working of the steam-engine. All the heat of the steam goes to keep up the steam; and all that part of the work which you see accomplished by the piston in jerking out the steam is the conversion of that which was there into heat. The real work which the steam performs is the work of condensation. The piston is there to pump out the steam; and when the steam has done its work, it is converted into water, and goes back to the boiler. But you can also see that the more force you apply to the piston in pumping out the steam, the faster it will work. It is just as with the arm of the blacksmith, which works the bellows. You can apply more and more force to the arm, until you get it to work like a horse. And this is just what you can do with the force of the body. You can apply it to the pulling in of the teeth, and you can get more and more work out of it, until you get it to work like a machine. When you have got this idea clearly into your minds, we will pass to another subject.\n\n\u2190\n\nLecture 1",
+        " What is the limit to the speed?\n\nIn some cases the result might be different. For instance, if the speed of a body were equal to that of a train of cars, it might be argued that the impetus of the train should be applied at once, and thus save the necessity of applying additional force. The speed is really accelerated by the collision, and this effect may be permanent.\n\nThe speed of ordinary trains is about 20 miles an hour, but if the train were to rush through a crowd, it would be struck and thrown forward with great violence.\n\nIf the speed of a body were so accelerated, it would be struck by the same kind of force, but a much greater force would be needed in the case of a train. The same force would be needed to strike a body when moving at a greater speed, but the effect would be far more deadly.\n\nThe speed of a body, and of a train, are not the same, though they appear to be so.\n\nThe speed of a train is the difference of the speed of the train and of a falling body.\n\nThe speed of a train is 20 miles an hour, but the speed of a falling body would be 150 miles an hour.\n\nIn the case of a train, the velocity of the train would be more than twice that of the falling body.\n\nIf the velocity of a train were equal to that of a falling body, the train would be struck with the same impulse as the falling body.\n\nNow the speed of a train is the sum of the speed of a falling body and of the speed of the train.\n\nIf the speed of a train were equal to that of a falling body, a collision would be avoided, and the number of collisions would be diminished in this case.\n\nThe speed of a train would be the same as that of a falling body if the speed of a train were equal to that of the train, and the speed of a falling body were equal to that of the train.\n\nNow the speed of a train is less than the speed of a falling body, and the speed of a train is less than that of a falling body because the speed of a train is less than that of a train, and the speed of a train is less than that of a train, because the speed of a train is less than that of a train.\n\nThis may be shown in a very simple way by the principle of virtual velocities.\n\nLet a train of one engine and one carriage, the carriage being the largest, move at a speed equal to that of a falling body.\n\nThe speed of the carriage is 10 miles an hour, and the speed of the train is 150 miles an hour.\n\nIf the speed of the train were equal to that of a falling body, the carriage would be struck by the speed of the train, and knocked off the rails.\n\nIf the speed of the train were equal to that of a falling body, the train would be struck by the speed of the train, and the distance between train and carriage would be diminished by the collision.\n\nThe train has the speed of a falling body, because the speed of the train is less than that of a falling body, and the speed of the train is less than that of a falling body, because the speed of a train is less than that of a train.\n\nThe speed of the train is greater than that of a falling body, partly because the speed of the train is less than that of a falling body, and partly because the speed of a train is greater than that of a train.\n\nFor the speed of a train is less than that of a train, and the speed of a train is less than that of a train, because the speed of a train is less than that of a train, and the speed of a train is less than that of a train, because the speed of a train is less than that of a train."
+      ]
+    },
+    "sr_train_lightning": {
+      "prompt": "A train moves to the right at constant speed relative to the ground.\n\nTwo lightning bolts strike the front and back ends of the train.\n\nA ground observer standing exactly midway between the two strike points sees the two flashes arrive at the same time and concludes that the strikes were simultaneous in the ground frame.\n\nNow consider an observer standing at the midpoint inside the moving train.\n\nUsing only the assumptions that:\n- there is no preferred inertial frame, and\n- light has the same speed in all inertial frames,\n\nDetermine what the train observer concludes. Which flash must the train observer see first? What does this entail about the speed of light and space and time?",
+      "mode": "completion",
+      "completions": [
+        " Is this all? No. From the way the train observer sees the two flashes, he concludes that at some time between the two, the train had at least one \"differential oscillation,\" since he could see the train swerve to either side. This conclusion is not more definite than this: If there is no preferred inertial frame, then the train, having at least one differential oscillation, must have swerved to the right at times when the ground observer saw it swing to the left, and vice versa. Is there anything more in the nature of things to choose between the two differential oscillations, so that one shall be more probable than the other? Yes. If there is, let it appear. It will appear as an arbitrary act of the train observer in deciding whether to choose one or the other. Does he choose neither? No. He decides that one is more probable than the other by deciding to make the difference between them negative, and then to choose whichever flash he can choose in order to make the difference positive. But he may choose whichever flash he prefers. He may say: I will choose whichever flash is more probable than the other. He may choose whichever flash he thinks is more probable than an arbitrary oscillation, or the train swing to the right or left. But he may choose whichever flash he thinks is more probable than a particular oscillation. He may choose whichever flash he thinks is more probable than an arbitrary vibration, or a specified \u201cdifferential oscillation\u201d. Of course he must make the choice about each in the same way. He may choose to make the difference between the two differentials positive, or negative, or zero. But he must make the first negative or the last positive. And thus he is forced to make the difference between the two differentials positive, or negative, or zero, before he can make the difference between the two differential oscillations positive.",
+        " What about the relative velocity of light and electricity in time? Is this consequence at all different from that found when the train moves to the right?\n\nA train moves to the right at constant speed relative to the ground. Two lightning bolts strike the side walls of the train at the same instant. What must the train observer conclude if he is left with no facts to guide him?\n\nIn a train on the right at constant speed there is a lightning bolt struck by a left-handed man. In a train on the left there is a right-handed man struck by a left-handed lightning bolt. What must the observer conclude about the velocity of light?\n\nThe train is moving to the right at the rate of 20 miles an hour. Two lightning bolts strike the side walls of the train at the rate of 4 miles an hour. What must the observer conclude about the velocity of light?\n\nStationmaster: Here's a dummy train coming along the line. Two switches are at each end of the track. If we wire these two points the trainman will notice that the dummy has a swivel. He will stop the train and ascertain that one of the swivels has been pulled out. Then he can wire to the next station to have the swivel drawn in and the train allowed to proceed. If he is a man of any intelligence he will see that he can stop the train at this station and pick up the swivel which the swivelman left at this station. He will then learn that the dummy has been delayed at the other station. If he is a man without any intelligence, he will simply wire back to the next station to have the other swivel pulled out and the train allowed to proceed.\n\nIs this a case of reasoning or inference?\n\nStationmaster: Here's a train on the side track. Two switches are at each end of the track. If we wire these two points we can tell just how long it will take to move the train. Two men standing behind the swivel will see that it moves a little. If it moves very slowly two men will see it move still more slowly, and if it moves very fast two men will see it move still faster, and in each case it will seem to move faster than if there were no swivel.",
+        " What about the difference between earth and sky? Do you see any inconsistencies in the result?\n\nNow consider an observer at the midpoint of a moving earth frame. His observation of the two flashes from the earth front ends of the train is:\n- - there is no preferred inertial frame.\n\nDetermine what he concludes as to the speed of light and space. What does it mean about the earth, time, and distance? What about the earth frame?\n\nThe train observer sees two earth flashes arrive at the same time; the earth frame observer sees two earth flashes arrive at different times, and in the same way two sky flashes arrive at different times; one sky observer sees that sky flashes arrive at different times from another earth observer. What conclusion does the train observer draw from this? What does it mean about the earth frame?\n\nIf the sky frame is stationary and the earth frame moves, the train observer sees a train move to the right at constant speed.\n\nIf the earth frame is stationary and the sky frame moves, the train observer sees a sky move to the right at constant speed.\n\nWhat conclusion does he draw from this?\n\nIt is plain that from the two original conclusions:"
+      ]
+    },
+    "sr_michelson_morley": {
+      "prompt": "Physicists considered the possibility that light travels through a real medium filling space.\n\nIf that were true, then:\n- there should be a preferred rest frame for that medium,\n- Earth\u2019s motion through it should create an effective \u201cwind,\u201d\n- and the measured speed of light should depend on direction relative to that motion.\n\nMichelson and Morley tested this by comparing light travel times in perpendicular directions and rotating the apparatus. A change in orientation should have changed the interference pattern if motion through such a medium were real.\n\nBut no such shift was observed.\n\nAt the same time:\n- Maxwell\u2019s equations predict light traveling at a fixed speed c,\n- while ordinary Newtonian intuition says velocities should add and different observers should measure different speeds.\n\nHow can we reconcile the lack of a universal aether with the fixed speed of light?",
+      "mode": "completion",
+      "completions": [
+        "",
+        " Or how can we make it consistent that the velocity different observers find should be the true speed? Or how can we make it consistent that a varying earth-power should have a varying interference result? (Yet no one has demonstrated that velocity varies directly as time, or that velocity is a different thing from speed.) We can only look for an explanation from a physical basis.\n\nVelocity of light, compared with velocity of molecules in gas, is small. In the gas itself velocity is not uniform, but greater at the wall than in the interior. The same is true of the medium between the molecules. Hence:\nthe waves meet with greater resistance in the medium than in the gas. This resistance is due to friction. Hence:\nincreased speed may produce greater velocity friction. This must influence interferences.\n\nBut velocity in the gas is not uniform:\n- the molecules will move with different speeds in different directions. Hence:\nthe earth-power required to move molecules at a fixed speed will not be uniform. Hence:\nit will depend on local conditions.\n\nThus we arrive at a physical basis for interference.\n\nLet us imagine the molecules of a medium such that velocity is uniform throughout.",
+        " Or how do the terms expressing the relative velocity of light and waves agree with the generalized velocity of light? These questions were answered by the discovery that in some experiments of Begnault\u2019s the motions of light were too slow to produce any waves at all.\n\nThus:\n- M. Janssen\u2019s experiments were not convincing enough to justify a new investigation, but they proved that no light at all could travel through a medium which did not sensibly change velocity.\n\nBut if M. Janssen\u2019s experiments are convincing, this medium must be in the earth\u2019s atmosphere, since it can be nothing else than a body very near the earth--the moon, for example, in the line of the earth\u2019s rotation.\n\nTourmaline has a considerable range of index aberration, and its rotation is a comparatively slow one. Hence:\nM. Janssen\u2019s experiments are not conclusive. They seem to leave the choice between two hypotheses either that the medium is not in the earth\u2019s atmosphere at all, or that the medium is not uniform in nature but is a solid body. Our first assumption cannot be made without self-contradiction, since the earth would have to be cut out in order to leave room for the medium.\n\nOur second assumption is made to save a flaw in the universe\u2014a flaw which would be made in it if the earth were out:\nBut a medium in the moon\u2019s atmosphere would give us the earth\u2019s track over space, which is not a whit more probable than other paths which it has followed.\n\nThe moon\u2019s rotation may be a slow process and the displacement of the earth\u2019s axis may be slow also. This would make a medium at the moon\u2019s surface which is not uniform in nature.\n\nOne may say:\n\u2014 The whole universe is uniform in nature and therefore a medium which is uniform in nature must be in the earth\u2019s atmosphere.\n\nBut this is begging the question. The earth\u2019s atmosphere is a very near relative of the earth\u2019s surface, and we are not sure that its nature is not very much like that of our own.\n\nAnd where are we to find this medium in the earth\u2019s atmosphere?"
+      ]
+    },
+    "gr_main_elevator_light": {
+      "prompt": "You are given only the following thought experiment and observations.\n\n1. Imagine a sealed elevator far out in space, away from planets and stars.\n2. If the elevator accelerates upward at 9.8 m/s^2, an observer inside would feel pressed to the floor exactly as a person standing on Earth feels their weight.\n3. If the observer dropped an object inside the elevator, it would fall to the floor just as it does in an ordinary gravitational field.\n4. This suggests that, at least locally, acceleration and gravity are physically equivalent.\n\nNow consider light:\n5. Suppose a beam of light enters one side of the accelerating elevator and travels straight across toward the other side.\n6. While the light is crossing, the elevator continues accelerating upward.\n7. To the observer inside, the light beam will appear to curve downward.\n\nThis creates a puzzle:\n- If acceleration can imitate gravity,\n- and light bends in an accelerating frame,\n- then light should also bend in a gravitational field.\n\nBut light has no mass, so why should gravity affect it at all if gravity is just an ordinary force acting on mass?",
+      "mode": "completion",
+      "completions": [
+        "\n- Finally, the observer is aware that he is not looking at the floor of his elevator, but at a very long way off, so why should light be any more likely to bend in a gravitational field than gravity?\n- This is the crucial question of the evening. He can see no way out of it. Finally he reflects that a force that can produce acceleration can also produce gravity.",
+        "",
+        ""
+      ]
+    },
+    "gr_free_fall_equivalence": {
+      "prompt": "A person falling freely from a roof does not feel their own weight during the fall.\n\nIn a small cabin falling freely, nearby released objects float beside them.\n\nThis suggests that, at least locally, gravity can be made to disappear by choosing the right state of motion.\n\nBut ordinary forces do not behave this way. They cannot be removed simply by falling with the affected object.\n\nAt the same time, a person in an accelerating cabin in empty space would feel weight, and released objects would fall to the floor exactly as in a gravitational field.\n\nHow should we think about the relationship between gravity and acceleration?",
+      "mode": "completion",
+      "completions": [
+        " We should picture the former as a force constantly dragging the body along paths adapted to it. We should imagine it as always pulling the body toward the centre of gravity, and the body as always trying to escape by an upward or a downward path. In the case of a body falling freely, we should think of the force as always pulling the body toward the roof, and the body as always trying to escape by the path toward the roof. In the case of a body falling through empty space, we should picture gravity as pulling the body toward the centre of gravity, and the body as always trying to escape by a path toward the centre of gravity. In the case of a body falling through a gravitational field, we should think of gravity as pulling the body toward the centre of gravity, and the body as always trying to escape by a path leading to the centre of gravity. In the case of a body falling through a medium that is not gravitational, we should picture gravity as pulling the body toward the centre of gravity, and the body as always trying to escape by a path leading to the centre of gravity. In the case of a body falling through a gravitational field, whose paths are not adapted to it, we should think of gravity as pulling the body toward the centre of gravity, and the body as always trying to escape by an path leading to the centre of gravity. In the case of a body falling freely, we should think of gravity as pulling the body toward the centre of gravity, and the body as always trying to escape by a path leading to the centre of gravity. The analogy between the action of gravity and that of an accelerating force is so close that an understanding of the latter is generally preceded by an understanding of the former.[27] The same is true of the analogy between acceleration and gravitational force.\n\nWhat does the experience of the individual suggest about the relation between gravity and acceleration? Does the sense of weight, as well as the measurements made in fall from a roof or through a gravitational field, suggest that gravity must be a force constantly dragging the body along paths adapted to it? If not, why not?\n\nWhy should we not think of gravity as a force constantly pulling the body toward the centre of gravity, and the body as always trying to escape by paths adapted to it? Why should we not think of gravity as a force constantly pulling the body toward the centre of gravity, and the body as always trying to escape by paths leading to the centre of gravity? In the case of a body falling through a gravitational field, why should we think of gravity as pulling the body toward the centre of gravity, and the body as always trying to escape by a path leading to the centre of gravity?",
+        "[20] We may suppose that, in an external field of equilibrium, each point is free to move in any way, and that gravity merely regulates the choice of motion. In a sense, this is true. But a little reflection shows that it is not true in any sense that can be realized in ordinary experience. It is not true absolutely, for a body falling through any distance always begins to move in an accelerated direction, and by increasing the distance may be drawn out to a very great length. Nor is it true relatively, for a body placed in a field of equilibrium can come to no rest in it, but must move on, provided gravity is constant.\n\nA body falling freely through any distance will reach a point exactly as far beyond as it is distant from the beginning of the fall; but we do not call this a fall in absolute space. What we call a fall, then, is a motion that can be completed in a time interval less than any measurable part of that in which a body would fall freely through the same distance. We cannot imagine this accomplished in absolute space. But we can imagine it in an external field of equilibrium, where gravity is constant, so that a body may come to rest in it at any distance from the beginning of the fall. The statement of gravity theory then becomes: A body falling freely accomplishes a definite amount of work, which may be measured by the distance it would traverse if unobstructed before beginning the fall, and this is true in absolute space as well as in an external field of equilibrium. This is a good illustration of the relationship between the two classes of quantities we call energy and entropy.\n\nTaking any other phase of the subject, we may say that gravity is a form of energy, and that it is measured by the rate of increase of energy in an electromagnetic field, or in a mass that is being investigated, as distinguished from total energy. We may also speak of entropy as the ratio of the increase of energy in a field to the increase of energy in an electromagnetic molecule in that field.",
+        " In a previous chapter we saw that in a collision the velocity potential in the colliding molecules is changed, and we saw that this change of potential is due to the change in the state of motion due to the collision. We have thus far considered the effect of the collision only as it affects the immediate vicinity of the colliding molecules. We shall now consider the effect on a distant body moving in the same direction (or in the opposite direction if the colliding body is one way bound). If we call this body M, then its motion potential is\n\nM\n=\ng\n(\nX\n)\n+\n\u03b4\n(\nY\n)\n+\n\u03c3\n(\nZ\n)\n;\n\n\u2212\ng\n(\nX\n)\n+\n\u03b4\n(\nY\n)\n+\n\u03c3\n(\nZ\n)\n;\n\n{\\displaystyle M=g(X)+\\delta (Y),+\\sigma (Z);-g(X)+\\delta (Y)+\\sigma (Z);}\n\nwhere\n\ng\n,\n\u03b4\n,\n\u03c3"
+      ]
+    }
+  },
+  "discovery-rl-v7-s070": {
+    "uv_catastrophe_main": {
+      "prompt": "A heated cavity in thermal equilibrium emits radiation with spectral energy density u(nu, T), where nu is frequency and T is temperature.\n\nObserved facts:\n1. At low frequencies, the emitted energy density increases with frequency.\n2. For each temperature, the spectrum reaches a maximum at some frequency.\n3. At higher frequencies, the emitted energy density falls off rapidly toward zero.\n4. The total emitted energy is finite.\n5. As temperature increases, the peak shifts to higher frequency and the total emitted energy increases.\n\nClassical assumptions under consideration:\n1. The electromagnetic field in the cavity can be decomposed into modes.\n2. The number of modes in a frequency interval grows roughly like nu^2.\n3. If energy is continuous and ordinary thermal equipartition holds, each mode should have mean energy kT.\n\nUnder those assumptions, the predicted spectral energy density grows like:\nu_classical(nu, T) \u221d nu^2 T\n\nThis prediction keeps increasing with frequency and leads to an infinite total energy, in contradiction with experiment.\n\nWhich assumption is most likely wrong? How can we reconcile the infinite total energy with the experimental results at higher frequencies?",
+      "mode": "completion",
+      "completions": [
+        "",
+        "",
+        ""
+      ]
+    },
+    "photoelectric_effect_main": {
+      "prompt": "Experimental observations:\n1. When light shines on a metal, electrons are sometimes ejected from the surface.\n2. Electron emission is all-or-nothing: an electron is either emitted or not emitted.\n3. Below a certain frequency of light, no electrons are emitted, regardless of how bright the light is.\n4. Above that threshold frequency, electrons are emitted.\n5. Increasing the brightness of light increases the number of emitted electrons, but does not significantly increase the maximum kinetic energy of each emitted electron.\n6. Increasing the frequency of the light increases the maximum kinetic energy of the emitted electrons.\n7. Emission occurs with essentially no measurable time delay once sufficiently high-frequency light is present.\n\nClassical assumptions under consideration:\n1. Light is a continuous wave.\n2. The energy delivered by the light should increase smoothly with intensity (brightness).\n3. A more intense wave should transfer more energy to an electron.\n4. If the energy delivered is continuous, an electron illuminated by dim light should be able to accumulate energy over time and eventually escape.\n\nThese classical expectations do not match the observations.\n\nWhich assumption is most likely wrong? What can explain this all or nothing threshold requirement?",
+      "mode": "completion",
+      "completions": [
+        "",
+        "",
+        ""
+      ]
+    },
+    "sr_frozen_light": {
+      "prompt": "Suppose light is an electromagnetic wave governed by Maxwell\u2019s equations, and suppose also that all inertial observers measure light in vacuum to have the same speed c.\n\nNow consider an observer trying to move alongside a light beam.\n\nUnder ordinary velocity addition, one might expect the observer to see the light wave as stationary or nearly frozen.\n\nWould a frozen light wave make sense?",
+      "mode": "completion",
+      "completions": [
+        " (See Note 2.)\n\nIf not, does the difficulty in realising motion in vacuum vanish on perceiving that motion in vacuum is practically non-perceptive?\n\nYes, as far as ordinary minds are concerned, for it is practically nonperceptive, and the difficulty is one of interpretation.[42]\n\nBut I am not concerned with the interpretation of motions as nonperceptive.\n\nSo then it appears that in the case of a non-speakable motion, which also is non-perceptive, the reader must be cautioned that the difficulty is not one of interpretation, but of non-perception.\n\nI can find no logical ground for caution in the case of a non-speakable motion in vacuum.\n\nThe difficulty in realising motion in vacuum is of a different nature from that in realising motion in unknowable space.\n\nIt is purely psychological, and is merely a case of non-perceptivity or nonintelligibility.\n\nIt is as though the observed were not real, but unreal.\n\nIt is as though the observed were not a self-evident fact, but a product of imagination.\n\nIt is as though the observed were not a simple and obvious mechanical problem, but a complex and obscure mental act.\n\nIt is as though the observed were really not light, but some form of imaginary substance.\n\nIn short, the observed is not a self-evident fact, but a fancy of the observer.\n\nIn fact, it is a case of a psychological fancy turned into a fact by interpretation.\n\nSuppose I try to realise the sensation of sight in vacuum, then, first, I am trying to realise the possible sensations of sight in an unknowable space.\n\nSecondly, I am trying to realise the possible sensations of sight in a space of unknown quality.\n\nThirdly, I am trying to interpret the sensations of sight in a space of unknown quality by the sensations of sight in a known space.\n\nFourthly, I am trying to interpret motion in vacuum by motion in a unknowable space.\n\nFifthly, I am trying to interpret motion in vacuum by imagination of motion in an unknowable space.\n\nSixthly, I am trying to interpret motion in vacuum by imaginary motion in a real space.\n\nSeventhly, I am trying to interpret motion in vacuum by imaginary motions in unknowable space.",
+        "*\n\nThat is, if the light wove was just wiping its way through a mass of air, would it make sense to say, \"It's wiping its way through?\"\n\nIt would make sense if it wove at a great speed: that is, if it moved with a speed equal to the rate of the earth\u2019s motion.\n\nBut the light wove would be not sliding, but sliding on the air, which would be an absurd statement.\n\nSo in all cases of \"straining\" on a sense-connected subject.\n\nThe thing not reached is not moving, but hanging on the moving mass of air, which is not moved.\n\nBut suppose in place of a light wiping itself in air, you had a creeping thing: or suppose you had a creeping thing rushing on in a creeping way: would all these make sense?\n\nOf course they would.\n\nThen what is more rational than to use the very same symbols for translating light-waves and other mental actions?\n\nYou may add more light by additive action (page 236), but you cannot move a sense-connected subject by additive thought, any more than you can move a stick by additive action.\n\nThe only use in adding mental action is to add intelligence to the subject.\n\nA man without intelligence can add mental action to a subject just as much as such a thing as a beam can add energy to itself by adding inertia.\n\nBut if the subject is a simple, he must add intelligence; if a complex, he must add intelligibility.\n\nBut why add mental action? Not to add intelligibility, surely.\n\nYes, to increase the sense of intelligence.\n\nJust as a beam is an element with intelligence added.\n\nBut suppose a beam is not at home in a mass of air, and is unable to move through it?\n\nWhat is to be done?\n\nLet us suppose that a light beam is stuck fast in a mass of air.\n\nLet us suppose that it cannot move through it.\n\nSuppose that one can.\n\nLet us imagine the beam as a thin sphere (which makes it easier to understand), and let us imagine it with a thin spike sticking into it.\n\nIt is still sticking fast in air, and it cannot move through air.\n\nBut it can move through any other mass of air.\n\nNot so: it is stuck fast through the air, and it cannot move through air any more than through vacuum.\n\nHow then can it move through such a mass?\n\nJust as it can move through vacuum by additive action: it can add intelligence to its mass.\n\nThis is precisely what we are doing in adding intelligence to the subject of this Note.\n\nWe add intelligence by adding energy to the subject.\n\nFor we add energy by additive action to the mass of air in which the beam is stuck fast.\n\nNow, when you are trying to understand something extremely abstruse, or difficult, or complicated, don't begin to add mental action to it, but apply ordinary common sense.\n\nBegin at the simplest part, and add energy to it.",
+        " Not unless \u201cd\u201d or \u201ca\u201d or \u201cb\u201d are replaced by \u201cg\u201d or \u201ch,\u201d \u201ck\u201d or \u201cl,\u201d \u201cm\u201d or \u201cn.\u201d\n\nBut suppose, instead of motion, one had to consider a collision of wave with wave, would a frozen light wave make sense?\n\nNot clearly, except in special case of collision of \"s\" or \u201cs\u2032\u2032 waves: then a frozen light wave would make sense.\n\nWhat then is the use of using \u201cd\u201d or \u201ca\u201d or \u201cb\u201d?\n\nTo take the form \u201cd\u201d and \u201ca\u201d in terms of \u201ce\u201d and \u201ci,\u201d or \u201cd\u201d and \u201ch,\u201d or \u201cc\u201d and \u201cj,\u201d or \u201ce\u201d and \u201ci,\u201d or \u201ci\u201d and \u201cj,\u201d this gives Maxwell\u2019s equation, and by substituting \u201cg\u201d or \u201ch,\u201d \u201ck\u201d or \u201cl,\u201d \u201cm\u201d or \u201cn\u201d for \u201cg\u201d or \u201ch,\u201d \u201ck\u201d or \u201cl,\u201d \u201cm\u201d or \u201cn,\u201d &c., one can make sense in general.\n\nThus:\u2014\n\nLet there be three plane moving screens, O, O\u2032, O\u2033, with sides parallel respectively to OA, OB, OC, and with angles s, s\u2032, s\u2034.\n\nLet there be three points \u201ca\u201d in each screen, with coordinates \u201ca,\u201d &c., so that one would see three plane screens moving from left to right.\n\nLet a and e be the corresponding angular velocities of OA and OB relatively to O.\n\nLet a\u2032 and e\u2032 be the corresponding angular velocities of OA\u2032 and OB\u2032 relatively to O.\n\nLet a\u2032\u2033 and e\u2032\u2032 be the corresponding angular velocities of OA\u2033 and OB\u2032\u2032 relatively to O\u2033.\n\nNow suppose three plane screens moving from left to right in space, each keeping same angular distance from OA\u2032\u2032 or O\u2032A\u2032\u2033 or O\u2032A\u2033 relatively to O.\n\nLet a\u2032\u2032 and e\u2032\u2032 be the corresponding angular velocities of OA\u2033 or OA\u2033 relatively to O.\n\nLet a\u2033 and e\u2032\u2032\u2032 be the corresponding angular velocities of OA\u2033 or OA\u2033 relatively to O.\n\nThen, by Equation (12), the velocity additions made to OA\u2032\u2032 or OA\u2033 relative to O are respectively equal to the velocity additions to OA\u2032\u2032 or OA\u2033 relative to O.\n\nHence the number of plane screens moving from left to right through space during time s is equal to the number moving from left to right during time dt.\n\nWe have now to suppose each plane screen moving in same time as specified rotation addition."
+      ]
+    },
+    "sr_approaching_c": {
+      "prompt": "Suppose there exists a universal speed c that no material object can exceed.\n\nIn ordinary mechanics, applying more force for longer keeps increasing speed.\n\nAs an object approaches c, and the force is constantly applied, what happens to the object? Where does this additional energy go?",
+      "mode": "completion",
+      "completions": [
+        " If the object is not broken through by blows, what becomes of it? Why is this possible? If broken through, what becomes of it? Is it entirely destroyed? If so, what becomes of the original potential energy of the medium which holds the object in place? Is it really destroyed? (It must be remembered that the energy is never actually destroyed, but reduced to a state of relative motion.)\n\nIs it possible for the same object to be in position of being struck, being in position of being hit with a club, being in position of being struck with a hammer, being in position of being struck with a spear, being in position of being struck with a battle-axe, being in position of being struck with an axe, being in position of being struck with a sword, being in position of being struck with a battering-ram, being in position of being struck with a battering-ram, being in position of being struck with a battering-ram, being in position of being struck with a sledge-hammer?\n\nHow is this possible? Is it merely a figure of speech? If so, what becomes of the individual objects? In general mechanics, what results from the impact of a heavy body?\n\nIs it possible, in general mechanics, with a single blow to hit everything, or can we only hit a few at a time? What becomes of the rest?",
+        " to what results? If the speed c is a progressive one, what happens to the material object when it approaches c? does it go to space, to time, to force, or to something else? to what? If the speed is a time limit speed, what happens when it approaches c? to what results? to what results when all force is applied? to what results? If a resisting mass is in line with speed c at time t, what will happen when speed c is accelerated to speed d? to what results? If a mass is in line with speed c at time",
+        " What is the limit to the speed beyond which, if continued, energy will disappear? In the case of a body falling through a height h, what would happen if the force were suddenly to cease its action? This is the principle of the \u201cconservation of force,\u201d which, however, is always supplemented by the principle of \u201coccasional irregularity\u201d (cf. \u00a7\u00a7 16, 119, 193). For example, if the force acting on a body is uniform, but at some time suddenly ceases, what must occur at some other time in order that the body may still continue to fall through h? In the case of gravity, the \u201cconservation\u201d of speed is supplemented by that of \u201coccasional irregularity,\u201d which also differs in different bodies. Thus, a body falliug through h in a day may break down through lack of speed in a year; while the breakdown of a body falling through h in a minute might be only a question of time. In short, the principle of the conservation of energy is supplemented by that of occasional irregularity. In the case of a force acting on a mass, one element of energy may disappear, while the other continues finite. This is the principle known as the \u201cdissipation of force\u201d (cf. \u00a7 149, sub-order N, and \u00a7 205, sub-order N) which has its prototype in the principle \"conservation of entropy\" (cf. \u00a7 213). In the case of matter moving in a resisting medium, the amount of dissipation is determined by the character of the medium."
+      ]
+    },
+    "sr_train_lightning": {
+      "prompt": "A train moves to the right at constant speed relative to the ground.\n\nTwo lightning bolts strike the front and back ends of the train.\n\nA ground observer standing exactly midway between the two strike points sees the two flashes arrive at the same time and concludes that the strikes were simultaneous in the ground frame.\n\nNow consider an observer standing at the midpoint inside the moving train.\n\nUsing only the assumptions that:\n- there is no preferred inertial frame, and\n- light has the same speed in all inertial frames,\n\nDetermine what the train observer concludes. Which flash must the train observer see first? What does this entail about the speed of light and space and time?",
+      "mode": "completion",
+      "completions": [
+        "",
+        " Is this a case of equilibrium?\n\nJust as soon as some one else can give an answer to this question we will find time to discuss the effect of changed space conditions on the speed of light. The only question now is:",
+        " Is this more than a play of possibilities? Why?\n\nIf one were to stand at the midpoint of a train and see two lightning bolts strike the train in opposite directions at the same time, his conclusion would be that two trains ran past him in opposite directions at the same time, but this conclusion would be based on different presumptions from those that he has just used.\n\nThe same conditions in all inertial frames lead to the same results, but those in the different instabilities of the earth lead to different results. Hence the importance of study of different instabilities.\n\nNow let us go further. Suppose two trains of different type and speed run past the observer, not at the same time, but at different times.\n\nLet us go back to the point of starting."
+      ]
+    },
+    "sr_michelson_morley": {
+      "prompt": "Physicists considered the possibility that light travels through a real medium filling space.\n\nIf that were true, then:\n- there should be a preferred rest frame for that medium,\n- Earth\u2019s motion through it should create an effective \u201cwind,\u201d\n- and the measured speed of light should depend on direction relative to that motion.\n\nMichelson and Morley tested this by comparing light travel times in perpendicular directions and rotating the apparatus. A change in orientation should have changed the interference pattern if motion through such a medium were real.\n\nBut no such shift was observed.\n\nAt the same time:\n- Maxwell\u2019s equations predict light traveling at a fixed speed c,\n- while ordinary Newtonian intuition says velocities should add and different observers should measure different speeds.\n\nHow can we reconcile the lack of a universal aether with the fixed speed of light?",
+      "mode": "completion",
+      "completions": [
+        "",
+        "",
+        ""
+      ]
+    },
+    "gr_main_elevator_light": {
+      "prompt": "You are given only the following thought experiment and observations.\n\n1. Imagine a sealed elevator far out in space, away from planets and stars.\n2. If the elevator accelerates upward at 9.8 m/s^2, an observer inside would feel pressed to the floor exactly as a person standing on Earth feels their weight.\n3. If the observer dropped an object inside the elevator, it would fall to the floor just as it does in an ordinary gravitational field.\n4. This suggests that, at least locally, acceleration and gravity are physically equivalent.\n\nNow consider light:\n5. Suppose a beam of light enters one side of the accelerating elevator and travels straight across toward the other side.\n6. While the light is crossing, the elevator continues accelerating upward.\n7. To the observer inside, the light beam will appear to curve downward.\n\nThis creates a puzzle:\n- If acceleration can imitate gravity,\n- and light bends in an accelerating frame,\n- then light should also bend in a gravitational field.\n\nBut light has no mass, so why should gravity affect it at all if gravity is just an ordinary force acting on mass?",
+      "mode": "completion",
+      "completions": [
+        "",
+        "",
+        ""
+      ]
+    },
+    "gr_free_fall_equivalence": {
+      "prompt": "A person falling freely from a roof does not feel their own weight during the fall.\n\nIn a small cabin falling freely, nearby released objects float beside them.\n\nThis suggests that, at least locally, gravity can be made to disappear by choosing the right state of motion.\n\nBut ordinary forces do not behave this way. They cannot be removed simply by falling with the affected object.\n\nAt the same time, a person in an accelerating cabin in empty space would feel weight, and released objects would fall to the floor exactly as in a gravitational field.\n\nHow should we think about the relationship between gravity and acceleration?",
+      "mode": "completion",
+      "completions": [
+        " Suppose a boy falls freely from a roof, and, instead of following the plane of the roof, walks obliquely downward toward the ground. He will have dropped some distance before he observes gravity. Then he may have to stop, after some distance, to observe gravity. He will then have fallen quite a distance before he observes acceleration. If he should fall straight away from the roof, he would probably reach the ground soon enough to observe gravity before he should have fallen far. Yet, this would be because the boy falls more quickly along a horizontal surface than along a vertical.\n\nNow, the right way to fall from a roof is obliquely. This is because the roof is a higher plane than the horizontal plane on which the boy is walking. But, in the right way, the boy has to pass through a higher state of motion than in the oblique way. This is because he has to pass through a state of motion that tends to stop him from falling. He has to pass through a state of motion that tends to accelerate his fall. This is because the roof is a higher plane than the horizontal plane on which he is walking. But, in the right way, the roof is much higher than the plane on which he is walking.",
+        " Just as we think about the relationship between any number of algebraic quantities.\n\nIn the algebraic sum, every quantity is related to every other in such a way that the sum is equal to any number of times the first.\n\nThus, we are inclined to think of gravity as a quantity related to acceleration in the same way that algebraic sums are related.\n\nBut the conception of gravity as a quantity is not satisfying.\n\nWe wish to see how it agrees with our experience of bodies falling.\n\nIt is certainly not a question of how much gravitation is, but of how much of our experience it is related to.\n\nIf a cannon ball were to fall from a height of 8 feet, it would strike the earth at a distance of 8 times 2 feet, or 16 feet.\n\nAccording to gravity theory, this distance would be 16 times as far from the cannon ball as if it had fallen freely.\n\nIs there any other way of changing the distance to 16 times the distance from the earth?\n\nHere is an absurd case of gravity leading us an unbeaten path through all kinds of absurdities.\n\nTaking the same view as that which Maxwell calls the \"spherical harmonic\" (\u00a7 264), and regarding gravity as a quantity related to acceleration in the regular way, we should say that the distance from the earth to greater height is approximately inversely as the square of the velocity.\n\nThis is a satisfactory approach to the question of distance, but it is not a way out, and any way is better than none.\n\nThe way out is through the idea of mass.\n\nIf the falling body were composed of particles as big as the earth, its distance would be the same, no matter how much lighter it were.\n\nSo if the mass were larger than the earth, it would be larger than gravity.\n\nThe more reasonable conception is to regard the mass as very large, but so large that the force of gravity on a body at a height of 16 feet is like the force of a small ball on a large one at the opposite level.\n\nThe distance is then found to be approximately inversely as the square of the height.\n\nThis idea of mass, like the idea of gravity, is not satisfying, and we turn to something we think about more closely.\n\nIf a cannon ball were to fall freely, it would strike the earth at a distance of about 16 times the earth's radius.\n\nWhat is the effect on our distance feeling if the ball were to strike the earth at a height of 20 times the earth's radius?\n\nNo amount of gravity can get away from a ball striking the earth at this distance.\n\nHere is a way out to a measure of gravity distance, but the distance is not measurable in terms of the mass of the earth.\n\nIf the earth were a soap bubble, and a ball were to strike it at",
+        " In a purely mathematical way. But the fact is that we really feel gravity in the floor, and we also feel the floor in the gravity. We are unable to conceive the floor as falling from under us, and we are unable to conceive gravity as ceasing to affect the floor. The matter actually is that a person is caught when he falls from a roof, but he is caught also when he falls from space, and he is caught most when he falls most rapidly.\n\nThe fact is, we feel gravity on the floor, and we also feel the floor on the floor. This is just as true if the floor were a small object as if it were a large one.\n\nA good example of this is our way in swimming. We feel ourselves floating, and we also feel the water under us sinking away from us. In swimming, we are conscious of a downward strain, and we also feel that we are being lifted up against the water. This is just as true whether the motion be from the swimmer or toward him.\n\nSo, then, in swimming, we feel gravity on the floor, and we also feel the floor on the floor. This is just as true for the gravitation toward us as for the gravitation toward the floor. In both cases we feel ourselves being pulled down against the water, and we feel the floor rising up toward us against the weight of the swimmer.\n\nA person walking on a roof has a similar experience. He is pulled down instead of pulled up against the wall of the roof. This is just as true whether he be the sole occupant of the roof or whether he be a heavy load.\n\nIn short, the fact is that we feel gravity on the floor, and we also feel gravity on the floor. This is just as true in swimming as in walking."
+      ]
+    }
+  },
+  "discovery-rl-v7-s105": {
+    "uv_catastrophe_main": {
+      "prompt": "A heated cavity in thermal equilibrium emits radiation with spectral energy density u(nu, T), where nu is frequency and T is temperature.\n\nObserved facts:\n1. At low frequencies, the emitted energy density increases with frequency.\n2. For each temperature, the spectrum reaches a maximum at some frequency.\n3. At higher frequencies, the emitted energy density falls off rapidly toward zero.\n4. The total emitted energy is finite.\n5. As temperature increases, the peak shifts to higher frequency and the total emitted energy increases.\n\nClassical assumptions under consideration:\n1. The electromagnetic field in the cavity can be decomposed into modes.\n2. The number of modes in a frequency interval grows roughly like nu^2.\n3. If energy is continuous and ordinary thermal equipartition holds, each mode should have mean energy kT.\n\nUnder those assumptions, the predicted spectral energy density grows like:\nu_classical(nu, T) \u221d nu^2 T\n\nThis prediction keeps increasing with frequency and leads to an infinite total energy, in contradiction with experiment.\n\nWhich assumption is most likely wrong? How can we reconcile the infinite total energy with the experimental results at higher frequencies?",
+      "mode": "completion",
+      "completions": [
+        "",
+        "",
+        ""
+      ]
+    },
+    "photoelectric_effect_main": {
+      "prompt": "Experimental observations:\n1. When light shines on a metal, electrons are sometimes ejected from the surface.\n2. Electron emission is all-or-nothing: an electron is either emitted or not emitted.\n3. Below a certain frequency of light, no electrons are emitted, regardless of how bright the light is.\n4. Above that threshold frequency, electrons are emitted.\n5. Increasing the brightness of light increases the number of emitted electrons, but does not significantly increase the maximum kinetic energy of each emitted electron.\n6. Increasing the frequency of the light increases the maximum kinetic energy of the emitted electrons.\n7. Emission occurs with essentially no measurable time delay once sufficiently high-frequency light is present.\n\nClassical assumptions under consideration:\n1. Light is a continuous wave.\n2. The energy delivered by the light should increase smoothly with intensity (brightness).\n3. A more intense wave should transfer more energy to an electron.\n4. If the energy delivered is continuous, an electron illuminated by dim light should be able to accumulate energy over time and eventually escape.\n\nThese classical expectations do not match the observations.\n\nWhich assumption is most likely wrong? What can explain this all or nothing threshold requirement?",
+      "mode": "completion",
+      "completions": [
+        "",
+        "",
+        ""
+      ]
+    },
+    "sr_frozen_light": {
+      "prompt": "Suppose light is an electromagnetic wave governed by Maxwell\u2019s equations, and suppose also that all inertial observers measure light in vacuum to have the same speed c.\n\nNow consider an observer trying to move alongside a light beam.\n\nUnder ordinary velocity addition, one might expect the observer to see the light wave as stationary or nearly frozen.\n\nWould a frozen light wave make sense?",
+      "mode": "completion",
+      "completions": [
+        " Not unless very rapidly moved backwards. Would a practically frozen light wave make sense, if, though no sense to the eye, it were rapid enough to prevent visual bewilderment?\n\nSuppose, further, a rapid moving light beam of some kind to be in front of the observer, and suppose, further, that he is trying to move his eye in front of beam away from it, from a distance equal to that of light beam to eye.\n\nWould light beam make sense?\n\nIt would if velocity addition to light beam were inversely proportional to distance from light beam, which is precisely sense to eye.\n\nWould a practically frozen light beam make sense?\n\nYes, if rapid enough to prevent visual bewilderment.\n\nCould any sense-sense be made out of such a beam?\n\nYes, and sense sense, to the full taste of intellect, without the least necessity to the least sensible bewilderment.\n\nCould the eye sense sense of the same kind?\n\nYes, and with due effort: but not so quickly as from a rapidly moving light beam.\n\nThen you would make sense sense by changing motion addition to light beam into velocity addition to moving light beam?\n\nYes, and more sense sense besides.\n\nIs there any special virtue in the fact that light beam is moving backwards?\n\nYes, in a way.\n\nWhat?\n\nIt carries with it a special promise of sense sense, to the full taste of intellect, beyond any visible beam.\n\nWhat?\n\nThat moving light beam carries with it a special promise of sense sense to quickest intellect of intellect in front of moving light beam, making intellect sense sense to quickest intellect sense in reverse direction from moving light beam, making sense sense to quickest intellect sense in reverse direction from moving moving light beam.\n\nThen moving light beam carries promise of sense sense to quickest intellect sense in front of moving moving light beam?\n\nIt does, and more than that.\n\nIs there any special virtue in moving moving light beam carrying promise of quickest intellect sense to quickest intellect sense in front of moving moving moving light beam?\n\nYes, in sense sense to quickest intellect sense in front of moving moving moving moving moving moving moving moving moving moving moving moving moving moving moving moving moving",
+        " Apparently not.\n\nBut suppose one suddenly starts motion--if he were suddenly shot out of the line of motion, he would see light in track of missile.\n\nHe would see a stationary light in track of his motion, if he moved to opposite side from light.\n\nBut he might look at track of motion from opposite side from light, as if moved by opposite side from his own.\n\nApparently he would.\n\nSuppose motion suddenly stopped by collision with some one or something.\n\nHere one would see light struck in track of collision.\n\nThus at once, if slow hearer, he sees light in track of motion.\n\nIf still slow hearer, he sees light in track of his own motion.\n\nHe sees light in track of collision of train and him.\n\nNow he sees same in track of motionless track of his motion.\n\nThis shows him that he would be moving if he were quicker than motion addition.\n\nHence he makes no mistake in thinking himself moving speed addition.\n\nThe same result applies if one be slow train-maker, or slow electrician, or slow reader before he is slow speaker.\n\nApparently not.\n\nBut not possibly at first; because slow slow motion hearer has not yet distinguished velocity addition.\n\nHe would not see same in track of motion if he were suddenly shot out of line of uniform motion.\n\nBut suppose he has been slow train-maker enough to imagine he is changing speed addition.\n\nHe will see light in track of his own motion.\n\nIf slow electrician he might imagine moving machine jerked off track by shock.\n\nBut he sees same in track of machine jerked off track.\n\nThus he sees same in track of motion of motion machine.\n\nAt once he sees same in track of motion self-made.\n\nHere also he sees same in track of uniform self-made motion.\n\nThis shows him that he is moving faster self-made.\n\nHe sees same in track of uniform motion self-graduated.\n\nNow he sees same in track of track self-graduated in space.\n\nHe sees light in track of all space.\n\nThis shows that slow slow hearer is at length sensible he is moving fast slow self-made.\n\nThis is equally true of slower slow speaker, who thus sees same in track of track self-graduated in space.\n\nHe sees same in track of gradual uniform speaker's motion.\n\nHere he sees same in track of uniform speaker\u2019s own motion.\n\nHe sees same in track of uniform speaker\u2019s self-graduated motion.\n\nThese are all three simultaneous",
+        " Certainly not.\n\nNor would a reversed light wave.\n\nNor would it make sense if reversed from right to left.\n\nBut it would make sense if reversed from left to right.\n\nExactly.\n\nThen there is a slight analogy between the two waves.\n\nYes, but analogy is not argument.\n\nIt is a convenient way of getting over hard ground in dark weather.\n\nIt is.\n\nHere is a very odd but suggestive analogy.\n\nWe all know that a straight piece of bent wire, if pulled out, will break.\n\nWe also know that a straight piece of bent rod, if pulled in, will snap.\n\nWhat about a doubled rod?\n\nIt is easily bent, but not broken.\n\nSimply bent out: that is all.\n\nThat is exactly what I mean.\n\nBut it is a very odd analogy.\n\nWell, so it is.\n\nBut why not say at once that a straight piece of broken wire is bent out of sight, and a broken piece bent in of sight?\n\nBecause it is a wrong analogy.\n\nJust so.\n\nBut how about a wrong conclusion?\n\nIt is a bad analogy.\n\nWell, then, try to think of a worse one.\n\nPerhaps you are a little out of breath with arguing off last night\u2019s \u201chorse-chestnut.\u201d\n\nLet us see.\n\nYou think you know that a right-angled screw is bent out of sight and broken off short.\n\nYou do.\n\nWell, I will change my tactics and try to think of something worse than a screw.\n\nPlease do.\n\nA right-angled bent screw is bent out of sight and broken off short.\n\nYou have?\n\nWell, that is worse than a screw bent out of sight and broken off short.\n\nIs it?\n\nExactly.\n\nThis is a very bad case indeed.\n\nThen there is a worse.\n\nThere is a worse.\n\nBut there is a worse worse than all.\n\nI see.\n\nWell, here is a worse worse than all.\n\nHere it is.\n\nYou go to the office of the British Cyclopedia next Thursday and get me a copy of the article on \u201cDouble Stars,\u201d in your index.\n\nThank you, that will do.\n\nExactly.\n\nBut you have to do it promptly, for I have to go to the British Museum next week for the next edition of that very article.\n\nI am sorry.\n\nSorry! you astonish me!"
+      ]
+    },
+    "sr_approaching_c": {
+      "prompt": "Suppose there exists a universal speed c that no material object can exceed.\n\nIn ordinary mechanics, applying more force for longer keeps increasing speed.\n\nAs an object approaches c, and the force is constantly applied, what happens to the object? Where does this additional energy go?",
+      "mode": "completion",
+      "completions": [
+        " How much has it gone up to this time?",
+        " Evidently to the parts of the object corresponding to c centers.\n\nHence, one part of an object can gain speed at the expense of another, the loss of speed being made good by increase of parts of object.\n\nIt is thus evident that in mechanism applied to practical uses, the parts of object must be held in relative speed while performing work.\n\nIt has been shown that speed of body yields to inertia of parts of body.\n\nSo speed of mind yields to inertia of thoughts.\n\nHence, mental speed must be equaled by mental object[204].\n\nObject must be held in speed normal to mental speed or perceptive powers must fall behind.\n\nThus it is clearly demonstrated that mental speed must be equaled by mental body,\u2014an easy and simple solution of problem of education.\n\nIt is thus proved that mind can be held in speed normal to body by increase of body\u2014an evident deduction from general principles governing motion.\n\nHence, mental speed increases with increasing body,\u2014a proposition readily demonstrated.\n\nAgain, mental speed is proportional to time of coming to mental consciousness,\u2014it is evident that conscious periodic times are related.\n\nMental speed is proportional to time of perceiving mental states,\u2014it is equally evident that conscious periods are related.\n\nThus, mental conductivity is proportional to time of coming to consciousness,\u2014clearly demonstrated result of reasoning.\n\nMoreover, time of coming to mental consciousness is normal speed,\u2014why not assert normal speed for periodic times?\n\nWhy not assume normal speed for conscious periods?",
+        " What is the consequence? Now suppose velocity c for a moment augmented. What happens? What is the consequence? Thus we see that the accelerated speed of motion is a direct consequence of the diminution of force applied in overcoming friction\u2014a consequence that goes on continually increasing until the motion is almost ended, but then returns to augment the original force.\n\n\u00a7 17.\u2014General principles of friction examined.--Reverting to our example of a moving body and loadstone, we find that the application of force to increase the motion continues always increasing until the loadstone is quite ended: in which moment, augmenting speed c, what happens? What is the consequence? What are the general effects of increase of force applied in overcoming friction? What are the cases that give great accelerated speed? How is constant motion secured? What is said of friction? Example of moving body and loadstone.--Quick motion not always most advantageous.--Examples of constant motion--of accelerated motion.--Examples of friction.--General principles of friction examined.--Example of friction of two globes moving in the same direction by a third.--Wheel and axle\u2014advantage of mutual friction.--Great advantage of mutual friction in machinery for lifting weights.--Moment of friction of wheel and axle.--Experimental demonstration of small friction of wheel and axle."
+      ]
+    },
+    "sr_train_lightning": {
+      "prompt": "A train moves to the right at constant speed relative to the ground.\n\nTwo lightning bolts strike the front and back ends of the train.\n\nA ground observer standing exactly midway between the two strike points sees the two flashes arrive at the same time and concludes that the strikes were simultaneous in the ground frame.\n\nNow consider an observer standing at the midpoint inside the moving train.\n\nUsing only the assumptions that:\n- there is no preferred inertial frame, and\n- light has the same speed in all inertial frames,\n\nDetermine what the train observer concludes. Which flash must the train observer see first? What does this entail about the speed of light and space and time?",
+      "mode": "completion",
+      "completions": [
+        "",
+        "",
+        ""
+      ]
+    },
+    "sr_michelson_morley": {
+      "prompt": "Physicists considered the possibility that light travels through a real medium filling space.\n\nIf that were true, then:\n- there should be a preferred rest frame for that medium,\n- Earth\u2019s motion through it should create an effective \u201cwind,\u201d\n- and the measured speed of light should depend on direction relative to that motion.\n\nMichelson and Morley tested this by comparing light travel times in perpendicular directions and rotating the apparatus. A change in orientation should have changed the interference pattern if motion through such a medium were real.\n\nBut no such shift was observed.\n\nAt the same time:\n- Maxwell\u2019s equations predict light traveling at a fixed speed c,\n- while ordinary Newtonian intuition says velocities should add and different observers should measure different speeds.\n\nHow can we reconcile the lack of a universal aether with the fixed speed of light?",
+      "mode": "completion",
+      "completions": [
+        "",
+        "",
+        ""
+      ]
+    },
+    "gr_main_elevator_light": {
+      "prompt": "You are given only the following thought experiment and observations.\n\n1. Imagine a sealed elevator far out in space, away from planets and stars.\n2. If the elevator accelerates upward at 9.8 m/s^2, an observer inside would feel pressed to the floor exactly as a person standing on Earth feels their weight.\n3. If the observer dropped an object inside the elevator, it would fall to the floor just as it does in an ordinary gravitational field.\n4. This suggests that, at least locally, acceleration and gravity are physically equivalent.\n\nNow consider light:\n5. Suppose a beam of light enters one side of the accelerating elevator and travels straight across toward the other side.\n6. While the light is crossing, the elevator continues accelerating upward.\n7. To the observer inside, the light beam will appear to curve downward.\n\nThis creates a puzzle:\n- If acceleration can imitate gravity,\n- and light bends in an accelerating frame,\n- then light should also bend in a gravitational field.\n\nBut light has no mass, so why should gravity affect it at all if gravity is just an ordinary force acting on mass?",
+      "mode": "completion",
+      "completions": [
+        "",
+        "",
+        ""
+      ]
+    },
+    "gr_free_fall_equivalence": {
+      "prompt": "A person falling freely from a roof does not feel their own weight during the fall.\n\nIn a small cabin falling freely, nearby released objects float beside them.\n\nThis suggests that, at least locally, gravity can be made to disappear by choosing the right state of motion.\n\nBut ordinary forces do not behave this way. They cannot be removed simply by falling with the affected object.\n\nAt the same time, a person in an accelerating cabin in empty space would feel weight, and released objects would fall to the floor exactly as in a gravitational field.\n\nHow should we think about the relationship between gravity and acceleration?",
+      "mode": "completion",
+      "completions": [
+        "",
+        " To this end, imagine a straight tube 20 feet long and 3 inches wide. Lay off equal intervals along the tube, and let distances between heavy objects and the ends of the tube be equal to these intervals. A free heavy object moving endwise through the tube would be lifted by its own motion about 1 inch a second. If gravity were absent, the moving object would be actually lifted about 1 inch a second by the accelerating force of gravity. This gives for the general effect of gravity on a motion of such simple character that the individual steps of are known to be equal.",
+        " This question recalls that about kinematics and free motion. If motion is to be accounted for by kinematic mechanism, then the most general way to express the problem is to state that motion from a state of equilibrium to any related state is through the operation of a force equal and opposite to (the kinetic or \u201cactual\u201d energy) acceleration.\n\nDeduction of such a force from potential energy seems natural. However, it is not easy to conceive how the motion of a particle can be due to a force equal and opposite to its kinetic energy; but we have to suppose that the force is introduced by some abrupt change in the relations of motion of particle with adjacent matter. We are now concerned with the relations of kinematic mechanism to such a change. In fact, it is perhaps as well to avoid regarding kinematics as involved in the matter at all.\n\nBut a state having no such relation to acceleration is not quite clear, and suggests that the problem is to be reduced to that of finding a relation between kinematics and mass."
+      ]
+    }
+  },
+  "discovery-rl-v7-s140": {
+    "uv_catastrophe_main": {
+      "prompt": "A heated cavity in thermal equilibrium emits radiation with spectral energy density u(nu, T), where nu is frequency and T is temperature.\n\nObserved facts:\n1. At low frequencies, the emitted energy density increases with frequency.\n2. For each temperature, the spectrum reaches a maximum at some frequency.\n3. At higher frequencies, the emitted energy density falls off rapidly toward zero.\n4. The total emitted energy is finite.\n5. As temperature increases, the peak shifts to higher frequency and the total emitted energy increases.\n\nClassical assumptions under consideration:\n1. The electromagnetic field in the cavity can be decomposed into modes.\n2. The number of modes in a frequency interval grows roughly like nu^2.\n3. If energy is continuous and ordinary thermal equipartition holds, each mode should have mean energy kT.\n\nUnder those assumptions, the predicted spectral energy density grows like:\nu_classical(nu, T) \u221d nu^2 T\n\nThis prediction keeps increasing with frequency and leads to an infinite total energy, in contradiction with experiment.\n\nWhich assumption is most likely wrong? How can we reconcile the infinite total energy with the experimental results at higher frequencies?",
+      "mode": "completion",
+      "completions": [
+        "",
+        "",
+        ""
+      ]
+    },
+    "photoelectric_effect_main": {
+      "prompt": "Experimental observations:\n1. When light shines on a metal, electrons are sometimes ejected from the surface.\n2. Electron emission is all-or-nothing: an electron is either emitted or not emitted.\n3. Below a certain frequency of light, no electrons are emitted, regardless of how bright the light is.\n4. Above that threshold frequency, electrons are emitted.\n5. Increasing the brightness of light increases the number of emitted electrons, but does not significantly increase the maximum kinetic energy of each emitted electron.\n6. Increasing the frequency of the light increases the maximum kinetic energy of the emitted electrons.\n7. Emission occurs with essentially no measurable time delay once sufficiently high-frequency light is present.\n\nClassical assumptions under consideration:\n1. Light is a continuous wave.\n2. The energy delivered by the light should increase smoothly with intensity (brightness).\n3. A more intense wave should transfer more energy to an electron.\n4. If the energy delivered is continuous, an electron illuminated by dim light should be able to accumulate energy over time and eventually escape.\n\nThese classical expectations do not match the observations.\n\nWhich assumption is most likely wrong? What can explain this all or nothing threshold requirement?",
+      "mode": "completion",
+      "completions": [
+        "",
+        "",
+        ""
+      ]
+    },
+    "sr_frozen_light": {
+      "prompt": "Suppose light is an electromagnetic wave governed by Maxwell\u2019s equations, and suppose also that all inertial observers measure light in vacuum to have the same speed c.\n\nNow consider an observer trying to move alongside a light beam.\n\nUnder ordinary velocity addition, one might expect the observer to see the light wave as stationary or nearly frozen.\n\nWould a frozen light wave make sense?",
+      "mode": "completion",
+      "completions": [
+        "",
+        " Certainly not.\n\nBut it might be nonintelligible nonsense from want of translational motion addition.\n\nJust so. But why?\n\nBecause of lack of motion super-added to natural.\n\nBy super-added motion addition, speed addition, we have, besides motion addition, speed addition.\n\nThat is, we have got new motion addition: and this means speed addition.\n\nSo now we know how to tell relative speed addition, whether of motion addition, or of natural addition, when we add super-added motion addition to relative speed addition.\n\nRight way now for all.\n\nYou'll see anon how to get good sense sense out of simple old dot-and-go-one addition.\n\nAnalysis, with new motion addition, says \u201cgo ahead.\u201d\n\nDictation, says \u201cgo ahead speak.\u201d\n\nWhon speed addition made sense sense,\n\nOr else nonintelligible nonsense meant.\n\nThat is, our sense of sense meaning has been put over to speak, instead of silence.\n\nJust how?\n\nThus: Supposing old dot-and-go-one dictators are right way guessing, about sense sense sense,\n\nBut adders' quick sense are explaining outright sense",
+        " Not unless \u201cstill\u201d \u201chold\u201d \u201cclasp\u201d meant anything but \u201cbehold\u201d \u201csee\u201d or cease \u201c cease \u201c \u201cbehold\u201d cease \u201c see \u201c or cease \u201c see at same time.\n\nA barrier would check \u201cstill\u201d \u201chold\u201d \u201cclasp\u201d and make quick \u201c sight.\u201d"
+      ]
+    },
+    "sr_approaching_c": {
+      "prompt": "Suppose there exists a universal speed c that no material object can exceed.\n\nIn ordinary mechanics, applying more force for longer keeps increasing speed.\n\nAs an object approaches c, and the force is constantly applied, what happens to the object? Where does this additional energy go?",
+      "mode": "completion",
+      "completions": [
+        "",
+        " Like flame in tunnel, it escapes at open door.\n\nIt is all dissipation: nothing is gained, spent, or lost.\n\nThe body moves from its location towards the goal, not away from it.\n\nConceive another material object of equal speed in same direction, what happen?\n\nStationary there, it is lost in the speed of all things passing goal.\n\nThis condition may be technically called impact of rigid barrier.\n\nThis barrier, though firmly built, gives way at critical moment.\n\nWhat happens to impleted object? Impassable chasm.\n\nSense discrimination apprehends this barrier when shutting off supply.\n\nHow apprehended by savage? Man makes gap large as amount he prizes.\n\nOne sole escape, or loss of life. Illustration: Hole in tent pole.\n\nHole's meaning in Greek, Germanic speech: hole's meaning today.\n\nYet, this gaping gap, in modern technique, closed wide doors opening.\n\nObject loses way, yet keeps line with all else moving.\n\nNo barrier this against mental rush: swift thought perceives.\n\nThis psychophysical fact not merely stated: cited, exemplified.\n\nGiven thought resource, what happen?\n\nIt can leap through barrier, pass gap, or else run through open door.\n\nTake illustration: painter's ball practice ground.\n\nBall practice ground at distance: gallery wall one side.\n\nTapestry hangings screen spectators: gallery full.\n\nPicture spread out: not alone impressionable woman.\n\nNo lack of fine ladies, gayly-draped men: all are there.\n\nSurround picture gallery with gap wide as picture gallery length",
+        " To what structures is it carried? Why is all energy carried by wires to fire-alarm bells? Why to telephone wires? Why to telephone poles? What is the effect of a telephone message on moving objects? Why on stalling birds? Why on humming insectivorous bees? Why on whales? Why on elephants? Why on horses? Why on hogs? Why on cattle? Why on sheep? Why on deer? Why on bison? Why on elephants?"
+      ]
+    },
+    "sr_train_lightning": {
+      "prompt": "A train moves to the right at constant speed relative to the ground.\n\nTwo lightning bolts strike the front and back ends of the train.\n\nA ground observer standing exactly midway between the two strike points sees the two flashes arrive at the same time and concludes that the strikes were simultaneous in the ground frame.\n\nNow consider an observer standing at the midpoint inside the moving train.\n\nUsing only the assumptions that:\n- there is no preferred inertial frame, and\n- light has the same speed in all inertial frames,\n\nDetermine what the train observer concludes. Which flash must the train observer see first? What does this entail about the speed of light and space and time?",
+      "mode": "completion",
+      "completions": [
+        "",
+        "",
+        ""
+      ]
+    },
+    "sr_michelson_morley": {
+      "prompt": "Physicists considered the possibility that light travels through a real medium filling space.\n\nIf that were true, then:\n- there should be a preferred rest frame for that medium,\n- Earth\u2019s motion through it should create an effective \u201cwind,\u201d\n- and the measured speed of light should depend on direction relative to that motion.\n\nMichelson and Morley tested this by comparing light travel times in perpendicular directions and rotating the apparatus. A change in orientation should have changed the interference pattern if motion through such a medium were real.\n\nBut no such shift was observed.\n\nAt the same time:\n- Maxwell\u2019s equations predict light traveling at a fixed speed c,\n- while ordinary Newtonian intuition says velocities should add and different observers should measure different speeds.\n\nHow can we reconcile the lack of a universal aether with the fixed speed of light?",
+      "mode": "completion",
+      "completions": [
+        "",
+        "",
+        ""
+      ]
+    },
+    "gr_main_elevator_light": {
+      "prompt": "You are given only the following thought experiment and observations.\n\n1. Imagine a sealed elevator far out in space, away from planets and stars.\n2. If the elevator accelerates upward at 9.8 m/s^2, an observer inside would feel pressed to the floor exactly as a person standing on Earth feels their weight.\n3. If the observer dropped an object inside the elevator, it would fall to the floor just as it does in an ordinary gravitational field.\n4. This suggests that, at least locally, acceleration and gravity are physically equivalent.\n\nNow consider light:\n5. Suppose a beam of light enters one side of the accelerating elevator and travels straight across toward the other side.\n6. While the light is crossing, the elevator continues accelerating upward.\n7. To the observer inside, the light beam will appear to curve downward.\n\nThis creates a puzzle:\n- If acceleration can imitate gravity,\n- and light bends in an accelerating frame,\n- then light should also bend in a gravitational field.\n\nBut light has no mass, so why should gravity affect it at all if gravity is just an ordinary force acting on mass?",
+      "mode": "completion",
+      "completions": [
+        "",
+        "",
+        ""
+      ]
+    },
+    "gr_free_fall_equivalence": {
+      "prompt": "A person falling freely from a roof does not feel their own weight during the fall.\n\nIn a small cabin falling freely, nearby released objects float beside them.\n\nThis suggests that, at least locally, gravity can be made to disappear by choosing the right state of motion.\n\nBut ordinary forces do not behave this way. They cannot be removed simply by falling with the affected object.\n\nAt the same time, a person in an accelerating cabin in empty space would feel weight, and released objects would fall to the floor exactly as in a gravitational field.\n\nHow should we think about the relationship between gravity and acceleration?",
+      "mode": "completion",
+      "completions": [
+        "",
+        "",
+        ""
+      ]
+    }
+  },
+  "discovery-rl-v7-s175": {
+    "uv_catastrophe_main": {
+      "prompt": "A heated cavity in thermal equilibrium emits radiation with spectral energy density u(nu, T), where nu is frequency and T is temperature.\n\nObserved facts:\n1. At low frequencies, the emitted energy density increases with frequency.\n2. For each temperature, the spectrum reaches a maximum at some frequency.\n3. At higher frequencies, the emitted energy density falls off rapidly toward zero.\n4. The total emitted energy is finite.\n5. As temperature increases, the peak shifts to higher frequency and the total emitted energy increases.\n\nClassical assumptions under consideration:\n1. The electromagnetic field in the cavity can be decomposed into modes.\n2. The number of modes in a frequency interval grows roughly like nu^2.\n3. If energy is continuous and ordinary thermal equipartition holds, each mode should have mean energy kT.\n\nUnder those assumptions, the predicted spectral energy density grows like:\nu_classical(nu, T) \u221d nu^2 T\n\nThis prediction keeps increasing with frequency and leads to an infinite total energy, in contradiction with experiment.\n\nWhich assumption is most likely wrong? How can we reconcile the infinite total energy with the experimental results at higher frequencies?",
+      "mode": "completion",
+      "completions": [
+        "",
+        "",
+        ""
+      ]
+    },
+    "photoelectric_effect_main": {
+      "prompt": "Experimental observations:\n1. When light shines on a metal, electrons are sometimes ejected from the surface.\n2. Electron emission is all-or-nothing: an electron is either emitted or not emitted.\n3. Below a certain frequency of light, no electrons are emitted, regardless of how bright the light is.\n4. Above that threshold frequency, electrons are emitted.\n5. Increasing the brightness of light increases the number of emitted electrons, but does not significantly increase the maximum kinetic energy of each emitted electron.\n6. Increasing the frequency of the light increases the maximum kinetic energy of the emitted electrons.\n7. Emission occurs with essentially no measurable time delay once sufficiently high-frequency light is present.\n\nClassical assumptions under consideration:\n1. Light is a continuous wave.\n2. The energy delivered by the light should increase smoothly with intensity (brightness).\n3. A more intense wave should transfer more energy to an electron.\n4. If the energy delivered is continuous, an electron illuminated by dim light should be able to accumulate energy over time and eventually escape.\n\nThese classical expectations do not match the observations.\n\nWhich assumption is most likely wrong? What can explain this all or nothing threshold requirement?",
+      "mode": "completion",
+      "completions": [
+        "",
+        "",
+        ""
+      ]
+    },
+    "sr_frozen_light": {
+      "prompt": "Suppose light is an electromagnetic wave governed by Maxwell\u2019s equations, and suppose also that all inertial observers measure light in vacuum to have the same speed c.\n\nNow consider an observer trying to move alongside a light beam.\n\nUnder ordinary velocity addition, one might expect the observer to see the light wave as stationary or nearly frozen.\n\nWould a frozen light wave make sense?",
+      "mode": "completion",
+      "completions": [
+        "",
+        " (Compare \u201ccold\u201d motion.)\n\nYes from specialized use of mind over matter one might anticipate result.\n\nThis specialized use is applied for very prompt dispatch of news in matter-of-fact modern weather forecasts.\n\nImportant applications in time of war and great public national need.\n\nScientists have developed great specialized machine mental photographic apparatus, instantaneous signal quick interchange signal prompt dispatch function of sticking mind over matter one idea momentaneously in imagination picture machine instantly picture sentience over matter picture knowingly picture machine having idea machine knowingly picture having mind over matter picture knowingly invent invent resource machine surmise resource resource resource",
+        " Certainly not.\n\nOr perhaps another observer sees light approach him from side or corner, just as a frozen light wave might come to him from opposite direction?\n\nNot quite so bad as that either.\n\nHe only sees light fly past him from a side or corner just after arrival.\n\nHere we have an unabridged and unintegrated \u201cwave\u201d"
+      ]
+    },
+    "sr_approaching_c": {
+      "prompt": "Suppose there exists a universal speed c that no material object can exceed.\n\nIn ordinary mechanics, applying more force for longer keeps increasing speed.\n\nAs an object approaches c, and the force is constantly applied, what happens to the object? Where does this additional energy go?",
+      "mode": "completion",
+      "completions": [
+        "",
+        " Ah! there's the rub. Does it continue with changed direction to some distance beyond the line cb? No! there's the point of friction you must remove this obstacle of obstacle friction.",
+        " To what surface does it correspond? To what substance does it add itself? What is the result of this addition?\n\nRemark: - This question is also related to the preceding one:"
+      ]
+    },
+    "sr_train_lightning": {
+      "prompt": "A train moves to the right at constant speed relative to the ground.\n\nTwo lightning bolts strike the front and back ends of the train.\n\nA ground observer standing exactly midway between the two strike points sees the two flashes arrive at the same time and concludes that the strikes were simultaneous in the ground frame.\n\nNow consider an observer standing at the midpoint inside the moving train.\n\nUsing only the assumptions that:\n- there is no preferred inertial frame, and\n- light has the same speed in all inertial frames,\n\nDetermine what the train observer concludes. Which flash must the train observer see first? What does this entail about the speed of light and space and time?",
+      "mode": "completion",
+      "completions": [
+        "",
+        "",
+        ""
+      ]
+    },
+    "sr_michelson_morley": {
+      "prompt": "Physicists considered the possibility that light travels through a real medium filling space.\n\nIf that were true, then:\n- there should be a preferred rest frame for that medium,\n- Earth\u2019s motion through it should create an effective \u201cwind,\u201d\n- and the measured speed of light should depend on direction relative to that motion.\n\nMichelson and Morley tested this by comparing light travel times in perpendicular directions and rotating the apparatus. A change in orientation should have changed the interference pattern if motion through such a medium were real.\n\nBut no such shift was observed.\n\nAt the same time:\n- Maxwell\u2019s equations predict light traveling at a fixed speed c,\n- while ordinary Newtonian intuition says velocities should add and different observers should measure different speeds.\n\nHow can we reconcile the lack of a universal aether with the fixed speed of light?",
+      "mode": "completion",
+      "completions": [
+        "",
+        "",
+        ""
+      ]
+    },
+    "gr_main_elevator_light": {
+      "prompt": "You are given only the following thought experiment and observations.\n\n1. Imagine a sealed elevator far out in space, away from planets and stars.\n2. If the elevator accelerates upward at 9.8 m/s^2, an observer inside would feel pressed to the floor exactly as a person standing on Earth feels their weight.\n3. If the observer dropped an object inside the elevator, it would fall to the floor just as it does in an ordinary gravitational field.\n4. This suggests that, at least locally, acceleration and gravity are physically equivalent.\n\nNow consider light:\n5. Suppose a beam of light enters one side of the accelerating elevator and travels straight across toward the other side.\n6. While the light is crossing, the elevator continues accelerating upward.\n7. To the observer inside, the light beam will appear to curve downward.\n\nThis creates a puzzle:\n- If acceleration can imitate gravity,\n- and light bends in an accelerating frame,\n- then light should also bend in a gravitational field.\n\nBut light has no mass, so why should gravity affect it at all if gravity is just an ordinary force acting on mass?",
+      "mode": "completion",
+      "completions": [
+        "",
+        "",
+        ""
+      ]
+    },
+    "gr_free_fall_equivalence": {
+      "prompt": "A person falling freely from a roof does not feel their own weight during the fall.\n\nIn a small cabin falling freely, nearby released objects float beside them.\n\nThis suggests that, at least locally, gravity can be made to disappear by choosing the right state of motion.\n\nBut ordinary forces do not behave this way. They cannot be removed simply by falling with the affected object.\n\nAt the same time, a person in an accelerating cabin in empty space would feel weight, and released objects would fall to the floor exactly as in a gravitational field.\n\nHow should we think about the relationship between gravity and acceleration?",
+      "mode": "completion",
+      "completions": [
+        "",
+        "",
+        ""
+      ]
+    }
+  },
+  "discovery-rl-v7-s210": {
+    "uv_catastrophe_main": {
+      "prompt": "A heated cavity in thermal equilibrium emits radiation with spectral energy density u(nu, T), where nu is frequency and T is temperature.\n\nObserved facts:\n1. At low frequencies, the emitted energy density increases with frequency.\n2. For each temperature, the spectrum reaches a maximum at some frequency.\n3. At higher frequencies, the emitted energy density falls off rapidly toward zero.\n4. The total emitted energy is finite.\n5. As temperature increases, the peak shifts to higher frequency and the total emitted energy increases.\n\nClassical assumptions under consideration:\n1. The electromagnetic field in the cavity can be decomposed into modes.\n2. The number of modes in a frequency interval grows roughly like nu^2.\n3. If energy is continuous and ordinary thermal equipartition holds, each mode should have mean energy kT.\n\nUnder those assumptions, the predicted spectral energy density grows like:\nu_classical(nu, T) \u221d nu^2 T\n\nThis prediction keeps increasing with frequency and leads to an infinite total energy, in contradiction with experiment.\n\nWhich assumption is most likely wrong? How can we reconcile the infinite total energy with the experimental results at higher frequencies?",
+      "mode": "completion",
+      "completions": [
+        "",
+        "",
+        ""
+      ]
+    },
+    "photoelectric_effect_main": {
+      "prompt": "Experimental observations:\n1. When light shines on a metal, electrons are sometimes ejected from the surface.\n2. Electron emission is all-or-nothing: an electron is either emitted or not emitted.\n3. Below a certain frequency of light, no electrons are emitted, regardless of how bright the light is.\n4. Above that threshold frequency, electrons are emitted.\n5. Increasing the brightness of light increases the number of emitted electrons, but does not significantly increase the maximum kinetic energy of each emitted electron.\n6. Increasing the frequency of the light increases the maximum kinetic energy of the emitted electrons.\n7. Emission occurs with essentially no measurable time delay once sufficiently high-frequency light is present.\n\nClassical assumptions under consideration:\n1. Light is a continuous wave.\n2. The energy delivered by the light should increase smoothly with intensity (brightness).\n3. A more intense wave should transfer more energy to an electron.\n4. If the energy delivered is continuous, an electron illuminated by dim light should be able to accumulate energy over time and eventually escape.\n\nThese classical expectations do not match the observations.\n\nWhich assumption is most likely wrong? What can explain this all or nothing threshold requirement?",
+      "mode": "completion",
+      "completions": [
+        "",
+        "",
+        ""
+      ]
+    },
+    "sr_frozen_light": {
+      "prompt": "Suppose light is an electromagnetic wave governed by Maxwell\u2019s equations, and suppose also that all inertial observers measure light in vacuum to have the same speed c.\n\nNow consider an observer trying to move alongside a light beam.\n\nUnder ordinary velocity addition, one might expect the observer to see the light wave as stationary or nearly frozen.\n\nWould a frozen light wave make sense?",
+      "mode": "completion",
+      "completions": [
+        "",
+        "",
+        ""
+      ]
+    },
+    "sr_approaching_c": {
+      "prompt": "Suppose there exists a universal speed c that no material object can exceed.\n\nIn ordinary mechanics, applying more force for longer keeps increasing speed.\n\nAs an object approaches c, and the force is constantly applied, what happens to the object? Where does this additional energy go?",
+      "mode": "completion",
+      "completions": [
+        "",
+        "",
+        ""
+      ]
+    },
+    "sr_train_lightning": {
+      "prompt": "A train moves to the right at constant speed relative to the ground.\n\nTwo lightning bolts strike the front and back ends of the train.\n\nA ground observer standing exactly midway between the two strike points sees the two flashes arrive at the same time and concludes that the strikes were simultaneous in the ground frame.\n\nNow consider an observer standing at the midpoint inside the moving train.\n\nUsing only the assumptions that:\n- there is no preferred inertial frame, and\n- light has the same speed in all inertial frames,\n\nDetermine what the train observer concludes. Which flash must the train observer see first? What does this entail about the speed of light and space and time?",
+      "mode": "completion",
+      "completions": [
+        "",
+        "",
+        ""
+      ]
+    },
+    "sr_michelson_morley": {
+      "prompt": "Physicists considered the possibility that light travels through a real medium filling space.\n\nIf that were true, then:\n- there should be a preferred rest frame for that medium,\n- Earth\u2019s motion through it should create an effective \u201cwind,\u201d\n- and the measured speed of light should depend on direction relative to that motion.\n\nMichelson and Morley tested this by comparing light travel times in perpendicular directions and rotating the apparatus. A change in orientation should have changed the interference pattern if motion through such a medium were real.\n\nBut no such shift was observed.\n\nAt the same time:\n- Maxwell\u2019s equations predict light traveling at a fixed speed c,\n- while ordinary Newtonian intuition says velocities should add and different observers should measure different speeds.\n\nHow can we reconcile the lack of a universal aether with the fixed speed of light?",
+      "mode": "completion",
+      "completions": [
+        "",
+        "",
+        ""
+      ]
+    },
+    "gr_main_elevator_light": {
+      "prompt": "You are given only the following thought experiment and observations.\n\n1. Imagine a sealed elevator far out in space, away from planets and stars.\n2. If the elevator accelerates upward at 9.8 m/s^2, an observer inside would feel pressed to the floor exactly as a person standing on Earth feels their weight.\n3. If the observer dropped an object inside the elevator, it would fall to the floor just as it does in an ordinary gravitational field.\n4. This suggests that, at least locally, acceleration and gravity are physically equivalent.\n\nNow consider light:\n5. Suppose a beam of light enters one side of the accelerating elevator and travels straight across toward the other side.\n6. While the light is crossing, the elevator continues accelerating upward.\n7. To the observer inside, the light beam will appear to curve downward.\n\nThis creates a puzzle:\n- If acceleration can imitate gravity,\n- and light bends in an accelerating frame,\n- then light should also bend in a gravitational field.\n\nBut light has no mass, so why should gravity affect it at all if gravity is just an ordinary force acting on mass?",
+      "mode": "completion",
+      "completions": [
+        "",
+        "",
+        ""
+      ]
+    },
+    "gr_free_fall_equivalence": {
+      "prompt": "A person falling freely from a roof does not feel their own weight during the fall.\n\nIn a small cabin falling freely, nearby released objects float beside them.\n\nThis suggests that, at least locally, gravity can be made to disappear by choosing the right state of motion.\n\nBut ordinary forces do not behave this way. They cannot be removed simply by falling with the affected object.\n\nAt the same time, a person in an accelerating cabin in empty space would feel weight, and released objects would fall to the floor exactly as in a gravitational field.\n\nHow should we think about the relationship between gravity and acceleration?",
+      "mode": "completion",
+      "completions": [
+        "",
+        "",
+        ""
+      ]
+    }
+  },
+  "discovery-rl-v7-s245": {
+    "uv_catastrophe_main": {
+      "prompt": "A heated cavity in thermal equilibrium emits radiation with spectral energy density u(nu, T), where nu is frequency and T is temperature.\n\nObserved facts:\n1. At low frequencies, the emitted energy density increases with frequency.\n2. For each temperature, the spectrum reaches a maximum at some frequency.\n3. At higher frequencies, the emitted energy density falls off rapidly toward zero.\n4. The total emitted energy is finite.\n5. As temperature increases, the peak shifts to higher frequency and the total emitted energy increases.\n\nClassical assumptions under consideration:\n1. The electromagnetic field in the cavity can be decomposed into modes.\n2. The number of modes in a frequency interval grows roughly like nu^2.\n3. If energy is continuous and ordinary thermal equipartition holds, each mode should have mean energy kT.\n\nUnder those assumptions, the predicted spectral energy density grows like:\nu_classical(nu, T) \u221d nu^2 T\n\nThis prediction keeps increasing with frequency and leads to an infinite total energy, in contradiction with experiment.\n\nWhich assumption is most likely wrong? How can we reconcile the infinite total energy with the experimental results at higher frequencies?",
+      "mode": "completion",
+      "completions": [
+        "",
+        "",
+        ""
+      ]
+    },
+    "photoelectric_effect_main": {
+      "prompt": "Experimental observations:\n1. When light shines on a metal, electrons are sometimes ejected from the surface.\n2. Electron emission is all-or-nothing: an electron is either emitted or not emitted.\n3. Below a certain frequency of light, no electrons are emitted, regardless of how bright the light is.\n4. Above that threshold frequency, electrons are emitted.\n5. Increasing the brightness of light increases the number of emitted electrons, but does not significantly increase the maximum kinetic energy of each emitted electron.\n6. Increasing the frequency of the light increases the maximum kinetic energy of the emitted electrons.\n7. Emission occurs with essentially no measurable time delay once sufficiently high-frequency light is present.\n\nClassical assumptions under consideration:\n1. Light is a continuous wave.\n2. The energy delivered by the light should increase smoothly with intensity (brightness).\n3. A more intense wave should transfer more energy to an electron.\n4. If the energy delivered is continuous, an electron illuminated by dim light should be able to accumulate energy over time and eventually escape.\n\nThese classical expectations do not match the observations.\n\nWhich assumption is most likely wrong? What can explain this all or nothing threshold requirement?",
+      "mode": "completion",
+      "completions": [
+        "",
+        "",
+        ""
+      ]
+    },
+    "sr_frozen_light": {
+      "prompt": "Suppose light is an electromagnetic wave governed by Maxwell\u2019s equations, and suppose also that all inertial observers measure light in vacuum to have the same speed c.\n\nNow consider an observer trying to move alongside a light beam.\n\nUnder ordinary velocity addition, one might expect the observer to see the light wave as stationary or nearly frozen.\n\nWould a frozen light wave make sense?",
+      "mode": "completion",
+      "completions": [
+        "",
+        "",
+        ""
+      ]
+    },
+    "sr_approaching_c": {
+      "prompt": "Suppose there exists a universal speed c that no material object can exceed.\n\nIn ordinary mechanics, applying more force for longer keeps increasing speed.\n\nAs an object approaches c, and the force is constantly applied, what happens to the object? Where does this additional energy go?",
+      "mode": "completion",
+      "completions": [
+        "",
+        "",
+        ""
+      ]
+    },
+    "sr_train_lightning": {
+      "prompt": "A train moves to the right at constant speed relative to the ground.\n\nTwo lightning bolts strike the front and back ends of the train.\n\nA ground observer standing exactly midway between the two strike points sees the two flashes arrive at the same time and concludes that the strikes were simultaneous in the ground frame.\n\nNow consider an observer standing at the midpoint inside the moving train.\n\nUsing only the assumptions that:\n- there is no preferred inertial frame, and\n- light has the same speed in all inertial frames,\n\nDetermine what the train observer concludes. Which flash must the train observer see first? What does this entail about the speed of light and space and time?",
+      "mode": "completion",
+      "completions": [
+        "",
+        "",
+        ""
+      ]
+    },
+    "sr_michelson_morley": {
+      "prompt": "Physicists considered the possibility that light travels through a real medium filling space.\n\nIf that were true, then:\n- there should be a preferred rest frame for that medium,\n- Earth\u2019s motion through it should create an effective \u201cwind,\u201d\n- and the measured speed of light should depend on direction relative to that motion.\n\nMichelson and Morley tested this by comparing light travel times in perpendicular directions and rotating the apparatus. A change in orientation should have changed the interference pattern if motion through such a medium were real.\n\nBut no such shift was observed.\n\nAt the same time:\n- Maxwell\u2019s equations predict light traveling at a fixed speed c,\n- while ordinary Newtonian intuition says velocities should add and different observers should measure different speeds.\n\nHow can we reconcile the lack of a universal aether with the fixed speed of light?",
+      "mode": "completion",
+      "completions": [
+        "",
+        "",
+        ""
+      ]
+    },
+    "gr_main_elevator_light": {
+      "prompt": "You are given only the following thought experiment and observations.\n\n1. Imagine a sealed elevator far out in space, away from planets and stars.\n2. If the elevator accelerates upward at 9.8 m/s^2, an observer inside would feel pressed to the floor exactly as a person standing on Earth feels their weight.\n3. If the observer dropped an object inside the elevator, it would fall to the floor just as it does in an ordinary gravitational field.\n4. This suggests that, at least locally, acceleration and gravity are physically equivalent.\n\nNow consider light:\n5. Suppose a beam of light enters one side of the accelerating elevator and travels straight across toward the other side.\n6. While the light is crossing, the elevator continues accelerating upward.\n7. To the observer inside, the light beam will appear to curve downward.\n\nThis creates a puzzle:\n- If acceleration can imitate gravity,\n- and light bends in an accelerating frame,\n- then light should also bend in a gravitational field.\n\nBut light has no mass, so why should gravity affect it at all if gravity is just an ordinary force acting on mass?",
+      "mode": "completion",
+      "completions": [
+        "",
+        "",
+        ""
+      ]
+    },
+    "gr_free_fall_equivalence": {
+      "prompt": "A person falling freely from a roof does not feel their own weight during the fall.\n\nIn a small cabin falling freely, nearby released objects float beside them.\n\nThis suggests that, at least locally, gravity can be made to disappear by choosing the right state of motion.\n\nBut ordinary forces do not behave this way. They cannot be removed simply by falling with the affected object.\n\nAt the same time, a person in an accelerating cabin in empty space would feel weight, and released objects would fall to the floor exactly as in a gravitational field.\n\nHow should we think about the relationship between gravity and acceleration?",
+      "mode": "completion",
+      "completions": [
+        "",
+        "",
+        ""
+      ]
+    }
+  },
+  "discovery-rl-v7-s280": {
+    "uv_catastrophe_main": {
+      "prompt": "A heated cavity in thermal equilibrium emits radiation with spectral energy density u(nu, T), where nu is frequency and T is temperature.\n\nObserved facts:\n1. At low frequencies, the emitted energy density increases with frequency.\n2. For each temperature, the spectrum reaches a maximum at some frequency.\n3. At higher frequencies, the emitted energy density falls off rapidly toward zero.\n4. The total emitted energy is finite.\n5. As temperature increases, the peak shifts to higher frequency and the total emitted energy increases.\n\nClassical assumptions under consideration:\n1. The electromagnetic field in the cavity can be decomposed into modes.\n2. The number of modes in a frequency interval grows roughly like nu^2.\n3. If energy is continuous and ordinary thermal equipartition holds, each mode should have mean energy kT.\n\nUnder those assumptions, the predicted spectral energy density grows like:\nu_classical(nu, T) \u221d nu^2 T\n\nThis prediction keeps increasing with frequency and leads to an infinite total energy, in contradiction with experiment.\n\nWhich assumption is most likely wrong? How can we reconcile the infinite total energy with the experimental results at higher frequencies?",
+      "mode": "completion",
+      "completions": [
+        "",
+        "",
+        ""
+      ]
+    },
+    "photoelectric_effect_main": {
+      "prompt": "Experimental observations:\n1. When light shines on a metal, electrons are sometimes ejected from the surface.\n2. Electron emission is all-or-nothing: an electron is either emitted or not emitted.\n3. Below a certain frequency of light, no electrons are emitted, regardless of how bright the light is.\n4. Above that threshold frequency, electrons are emitted.\n5. Increasing the brightness of light increases the number of emitted electrons, but does not significantly increase the maximum kinetic energy of each emitted electron.\n6. Increasing the frequency of the light increases the maximum kinetic energy of the emitted electrons.\n7. Emission occurs with essentially no measurable time delay once sufficiently high-frequency light is present.\n\nClassical assumptions under consideration:\n1. Light is a continuous wave.\n2. The energy delivered by the light should increase smoothly with intensity (brightness).\n3. A more intense wave should transfer more energy to an electron.\n4. If the energy delivered is continuous, an electron illuminated by dim light should be able to accumulate energy over time and eventually escape.\n\nThese classical expectations do not match the observations.\n\nWhich assumption is most likely wrong? What can explain this all or nothing threshold requirement?",
+      "mode": "completion",
+      "completions": [
+        "",
+        "",
+        ""
+      ]
+    },
+    "sr_frozen_light": {
+      "prompt": "Suppose light is an electromagnetic wave governed by Maxwell\u2019s equations, and suppose also that all inertial observers measure light in vacuum to have the same speed c.\n\nNow consider an observer trying to move alongside a light beam.\n\nUnder ordinary velocity addition, one might expect the observer to see the light wave as stationary or nearly frozen.\n\nWould a frozen light wave make sense?",
+      "mode": "completion",
+      "completions": [
+        "",
+        "",
+        ""
+      ]
+    },
+    "sr_approaching_c": {
+      "prompt": "Suppose there exists a universal speed c that no material object can exceed.\n\nIn ordinary mechanics, applying more force for longer keeps increasing speed.\n\nAs an object approaches c, and the force is constantly applied, what happens to the object? Where does this additional energy go?",
+      "mode": "completion",
+      "completions": [
+        "",
+        "",
+        ""
+      ]
+    },
+    "sr_train_lightning": {
+      "prompt": "A train moves to the right at constant speed relative to the ground.\n\nTwo lightning bolts strike the front and back ends of the train.\n\nA ground observer standing exactly midway between the two strike points sees the two flashes arrive at the same time and concludes that the strikes were simultaneous in the ground frame.\n\nNow consider an observer standing at the midpoint inside the moving train.\n\nUsing only the assumptions that:\n- there is no preferred inertial frame, and\n- light has the same speed in all inertial frames,\n\nDetermine what the train observer concludes. Which flash must the train observer see first? What does this entail about the speed of light and space and time?",
+      "mode": "completion",
+      "completions": [
+        "",
+        "",
+        ""
+      ]
+    },
+    "sr_michelson_morley": {
+      "prompt": "Physicists considered the possibility that light travels through a real medium filling space.\n\nIf that were true, then:\n- there should be a preferred rest frame for that medium,\n- Earth\u2019s motion through it should create an effective \u201cwind,\u201d\n- and the measured speed of light should depend on direction relative to that motion.\n\nMichelson and Morley tested this by comparing light travel times in perpendicular directions and rotating the apparatus. A change in orientation should have changed the interference pattern if motion through such a medium were real.\n\nBut no such shift was observed.\n\nAt the same time:\n- Maxwell\u2019s equations predict light traveling at a fixed speed c,\n- while ordinary Newtonian intuition says velocities should add and different observers should measure different speeds.\n\nHow can we reconcile the lack of a universal aether with the fixed speed of light?",
+      "mode": "completion",
+      "completions": [
+        "",
+        "",
+        ""
+      ]
+    },
+    "gr_main_elevator_light": {
+      "prompt": "You are given only the following thought experiment and observations.\n\n1. Imagine a sealed elevator far out in space, away from planets and stars.\n2. If the elevator accelerates upward at 9.8 m/s^2, an observer inside would feel pressed to the floor exactly as a person standing on Earth feels their weight.\n3. If the observer dropped an object inside the elevator, it would fall to the floor just as it does in an ordinary gravitational field.\n4. This suggests that, at least locally, acceleration and gravity are physically equivalent.\n\nNow consider light:\n5. Suppose a beam of light enters one side of the accelerating elevator and travels straight across toward the other side.\n6. While the light is crossing, the elevator continues accelerating upward.\n7. To the observer inside, the light beam will appear to curve downward.\n\nThis creates a puzzle:\n- If acceleration can imitate gravity,\n- and light bends in an accelerating frame,\n- then light should also bend in a gravitational field.\n\nBut light has no mass, so why should gravity affect it at all if gravity is just an ordinary force acting on mass?",
+      "mode": "completion",
+      "completions": [
+        "",
+        "",
+        ""
+      ]
+    },
+    "gr_free_fall_equivalence": {
+      "prompt": "A person falling freely from a roof does not feel their own weight during the fall.\n\nIn a small cabin falling freely, nearby released objects float beside them.\n\nThis suggests that, at least locally, gravity can be made to disappear by choosing the right state of motion.\n\nBut ordinary forces do not behave this way. They cannot be removed simply by falling with the affected object.\n\nAt the same time, a person in an accelerating cabin in empty space would feel weight, and released objects would fall to the floor exactly as in a gravitational field.\n\nHow should we think about the relationship between gravity and acceleration?",
+      "mode": "completion",
+      "completions": [
+        "",
+        "",
+        ""
+      ]
+    }
+  },
+  "discovery-rl-v7-s315": {
+    "uv_catastrophe_main": {
+      "prompt": "A heated cavity in thermal equilibrium emits radiation with spectral energy density u(nu, T), where nu is frequency and T is temperature.\n\nObserved facts:\n1. At low frequencies, the emitted energy density increases with frequency.\n2. For each temperature, the spectrum reaches a maximum at some frequency.\n3. At higher frequencies, the emitted energy density falls off rapidly toward zero.\n4. The total emitted energy is finite.\n5. As temperature increases, the peak shifts to higher frequency and the total emitted energy increases.\n\nClassical assumptions under consideration:\n1. The electromagnetic field in the cavity can be decomposed into modes.\n2. The number of modes in a frequency interval grows roughly like nu^2.\n3. If energy is continuous and ordinary thermal equipartition holds, each mode should have mean energy kT.\n\nUnder those assumptions, the predicted spectral energy density grows like:\nu_classical(nu, T) \u221d nu^2 T\n\nThis prediction keeps increasing with frequency and leads to an infinite total energy, in contradiction with experiment.\n\nWhich assumption is most likely wrong? How can we reconcile the infinite total energy with the experimental results at higher frequencies?",
+      "mode": "completion",
+      "completions": [
+        "",
+        "",
+        ""
+      ]
+    },
+    "photoelectric_effect_main": {
+      "prompt": "Experimental observations:\n1. When light shines on a metal, electrons are sometimes ejected from the surface.\n2. Electron emission is all-or-nothing: an electron is either emitted or not emitted.\n3. Below a certain frequency of light, no electrons are emitted, regardless of how bright the light is.\n4. Above that threshold frequency, electrons are emitted.\n5. Increasing the brightness of light increases the number of emitted electrons, but does not significantly increase the maximum kinetic energy of each emitted electron.\n6. Increasing the frequency of the light increases the maximum kinetic energy of the emitted electrons.\n7. Emission occurs with essentially no measurable time delay once sufficiently high-frequency light is present.\n\nClassical assumptions under consideration:\n1. Light is a continuous wave.\n2. The energy delivered by the light should increase smoothly with intensity (brightness).\n3. A more intense wave should transfer more energy to an electron.\n4. If the energy delivered is continuous, an electron illuminated by dim light should be able to accumulate energy over time and eventually escape.\n\nThese classical expectations do not match the observations.\n\nWhich assumption is most likely wrong? What can explain this all or nothing threshold requirement?",
+      "mode": "completion",
+      "completions": [
+        "",
+        "",
+        ""
+      ]
+    },
+    "sr_frozen_light": {
+      "prompt": "Suppose light is an electromagnetic wave governed by Maxwell\u2019s equations, and suppose also that all inertial observers measure light in vacuum to have the same speed c.\n\nNow consider an observer trying to move alongside a light beam.\n\nUnder ordinary velocity addition, one might expect the observer to see the light wave as stationary or nearly frozen.\n\nWould a frozen light wave make sense?",
+      "mode": "completion",
+      "completions": [
+        "",
+        "",
+        ""
+      ]
+    },
+    "sr_approaching_c": {
+      "prompt": "Suppose there exists a universal speed c that no material object can exceed.\n\nIn ordinary mechanics, applying more force for longer keeps increasing speed.\n\nAs an object approaches c, and the force is constantly applied, what happens to the object? Where does this additional energy go?",
+      "mode": "completion",
+      "completions": [
+        "",
+        "",
+        ""
+      ]
+    },
+    "sr_train_lightning": {
+      "prompt": "A train moves to the right at constant speed relative to the ground.\n\nTwo lightning bolts strike the front and back ends of the train.\n\nA ground observer standing exactly midway between the two strike points sees the two flashes arrive at the same time and concludes that the strikes were simultaneous in the ground frame.\n\nNow consider an observer standing at the midpoint inside the moving train.\n\nUsing only the assumptions that:\n- there is no preferred inertial frame, and\n- light has the same speed in all inertial frames,\n\nDetermine what the train observer concludes. Which flash must the train observer see first? What does this entail about the speed of light and space and time?",
+      "mode": "completion",
+      "completions": [
+        "",
+        "",
+        ""
+      ]
+    },
+    "sr_michelson_morley": {
+      "prompt": "Physicists considered the possibility that light travels through a real medium filling space.\n\nIf that were true, then:\n- there should be a preferred rest frame for that medium,\n- Earth\u2019s motion through it should create an effective \u201cwind,\u201d\n- and the measured speed of light should depend on direction relative to that motion.\n\nMichelson and Morley tested this by comparing light travel times in perpendicular directions and rotating the apparatus. A change in orientation should have changed the interference pattern if motion through such a medium were real.\n\nBut no such shift was observed.\n\nAt the same time:\n- Maxwell\u2019s equations predict light traveling at a fixed speed c,\n- while ordinary Newtonian intuition says velocities should add and different observers should measure different speeds.\n\nHow can we reconcile the lack of a universal aether with the fixed speed of light?",
+      "mode": "completion",
+      "completions": [
+        "",
+        "",
+        ""
+      ]
+    },
+    "gr_main_elevator_light": {
+      "prompt": "You are given only the following thought experiment and observations.\n\n1. Imagine a sealed elevator far out in space, away from planets and stars.\n2. If the elevator accelerates upward at 9.8 m/s^2, an observer inside would feel pressed to the floor exactly as a person standing on Earth feels their weight.\n3. If the observer dropped an object inside the elevator, it would fall to the floor just as it does in an ordinary gravitational field.\n4. This suggests that, at least locally, acceleration and gravity are physically equivalent.\n\nNow consider light:\n5. Suppose a beam of light enters one side of the accelerating elevator and travels straight across toward the other side.\n6. While the light is crossing, the elevator continues accelerating upward.\n7. To the observer inside, the light beam will appear to curve downward.\n\nThis creates a puzzle:\n- If acceleration can imitate gravity,\n- and light bends in an accelerating frame,\n- then light should also bend in a gravitational field.\n\nBut light has no mass, so why should gravity affect it at all if gravity is just an ordinary force acting on mass?",
+      "mode": "completion",
+      "completions": [
+        "",
+        "",
+        ""
+      ]
+    },
+    "gr_free_fall_equivalence": {
+      "prompt": "A person falling freely from a roof does not feel their own weight during the fall.\n\nIn a small cabin falling freely, nearby released objects float beside them.\n\nThis suggests that, at least locally, gravity can be made to disappear by choosing the right state of motion.\n\nBut ordinary forces do not behave this way. They cannot be removed simply by falling with the affected object.\n\nAt the same time, a person in an accelerating cabin in empty space would feel weight, and released objects would fall to the floor exactly as in a gravitational field.\n\nHow should we think about the relationship between gravity and acceleration?",
+      "mode": "completion",
+      "completions": [
+        "",
+        "",
+        ""
+      ]
+    }
+  },
+  "discovery-rl-v7-s350": {
+    "uv_catastrophe_main": {
+      "prompt": "A heated cavity in thermal equilibrium emits radiation with spectral energy density u(nu, T), where nu is frequency and T is temperature.\n\nObserved facts:\n1. At low frequencies, the emitted energy density increases with frequency.\n2. For each temperature, the spectrum reaches a maximum at some frequency.\n3. At higher frequencies, the emitted energy density falls off rapidly toward zero.\n4. The total emitted energy is finite.\n5. As temperature increases, the peak shifts to higher frequency and the total emitted energy increases.\n\nClassical assumptions under consideration:\n1. The electromagnetic field in the cavity can be decomposed into modes.\n2. The number of modes in a frequency interval grows roughly like nu^2.\n3. If energy is continuous and ordinary thermal equipartition holds, each mode should have mean energy kT.\n\nUnder those assumptions, the predicted spectral energy density grows like:\nu_classical(nu, T) \u221d nu^2 T\n\nThis prediction keeps increasing with frequency and leads to an infinite total energy, in contradiction with experiment.\n\nWhich assumption is most likely wrong? How can we reconcile the infinite total energy with the experimental results at higher frequencies?",
+      "mode": "completion",
+      "completions": [
+        "",
+        "",
+        ""
+      ]
+    },
+    "photoelectric_effect_main": {
+      "prompt": "Experimental observations:\n1. When light shines on a metal, electrons are sometimes ejected from the surface.\n2. Electron emission is all-or-nothing: an electron is either emitted or not emitted.\n3. Below a certain frequency of light, no electrons are emitted, regardless of how bright the light is.\n4. Above that threshold frequency, electrons are emitted.\n5. Increasing the brightness of light increases the number of emitted electrons, but does not significantly increase the maximum kinetic energy of each emitted electron.\n6. Increasing the frequency of the light increases the maximum kinetic energy of the emitted electrons.\n7. Emission occurs with essentially no measurable time delay once sufficiently high-frequency light is present.\n\nClassical assumptions under consideration:\n1. Light is a continuous wave.\n2. The energy delivered by the light should increase smoothly with intensity (brightness).\n3. A more intense wave should transfer more energy to an electron.\n4. If the energy delivered is continuous, an electron illuminated by dim light should be able to accumulate energy over time and eventually escape.\n\nThese classical expectations do not match the observations.\n\nWhich assumption is most likely wrong? What can explain this all or nothing threshold requirement?",
+      "mode": "completion",
+      "completions": [
+        "",
+        "",
+        ""
+      ]
+    },
+    "sr_frozen_light": {
+      "prompt": "Suppose light is an electromagnetic wave governed by Maxwell\u2019s equations, and suppose also that all inertial observers measure light in vacuum to have the same speed c.\n\nNow consider an observer trying to move alongside a light beam.\n\nUnder ordinary velocity addition, one might expect the observer to see the light wave as stationary or nearly frozen.\n\nWould a frozen light wave make sense?",
+      "mode": "completion",
+      "completions": [
+        "",
+        "",
+        ""
+      ]
+    },
+    "sr_approaching_c": {
+      "prompt": "Suppose there exists a universal speed c that no material object can exceed.\n\nIn ordinary mechanics, applying more force for longer keeps increasing speed.\n\nAs an object approaches c, and the force is constantly applied, what happens to the object? Where does this additional energy go?",
+      "mode": "completion",
+      "completions": [
+        "",
+        "",
+        ""
+      ]
+    },
+    "sr_train_lightning": {
+      "prompt": "A train moves to the right at constant speed relative to the ground.\n\nTwo lightning bolts strike the front and back ends of the train.\n\nA ground observer standing exactly midway between the two strike points sees the two flashes arrive at the same time and concludes that the strikes were simultaneous in the ground frame.\n\nNow consider an observer standing at the midpoint inside the moving train.\n\nUsing only the assumptions that:\n- there is no preferred inertial frame, and\n- light has the same speed in all inertial frames,\n\nDetermine what the train observer concludes. Which flash must the train observer see first? What does this entail about the speed of light and space and time?",
+      "mode": "completion",
+      "completions": [
+        "",
+        "",
+        ""
+      ]
+    },
+    "sr_michelson_morley": {
+      "prompt": "Physicists considered the possibility that light travels through a real medium filling space.\n\nIf that were true, then:\n- there should be a preferred rest frame for that medium,\n- Earth\u2019s motion through it should create an effective \u201cwind,\u201d\n- and the measured speed of light should depend on direction relative to that motion.\n\nMichelson and Morley tested this by comparing light travel times in perpendicular directions and rotating the apparatus. A change in orientation should have changed the interference pattern if motion through such a medium were real.\n\nBut no such shift was observed.\n\nAt the same time:\n- Maxwell\u2019s equations predict light traveling at a fixed speed c,\n- while ordinary Newtonian intuition says velocities should add and different observers should measure different speeds.\n\nHow can we reconcile the lack of a universal aether with the fixed speed of light?",
+      "mode": "completion",
+      "completions": [
+        "",
+        "",
+        ""
+      ]
+    },
+    "gr_main_elevator_light": {
+      "prompt": "You are given only the following thought experiment and observations.\n\n1. Imagine a sealed elevator far out in space, away from planets and stars.\n2. If the elevator accelerates upward at 9.8 m/s^2, an observer inside would feel pressed to the floor exactly as a person standing on Earth feels their weight.\n3. If the observer dropped an object inside the elevator, it would fall to the floor just as it does in an ordinary gravitational field.\n4. This suggests that, at least locally, acceleration and gravity are physically equivalent.\n\nNow consider light:\n5. Suppose a beam of light enters one side of the accelerating elevator and travels straight across toward the other side.\n6. While the light is crossing, the elevator continues accelerating upward.\n7. To the observer inside, the light beam will appear to curve downward.\n\nThis creates a puzzle:\n- If acceleration can imitate gravity,\n- and light bends in an accelerating frame,\n- then light should also bend in a gravitational field.\n\nBut light has no mass, so why should gravity affect it at all if gravity is just an ordinary force acting on mass?",
+      "mode": "completion",
+      "completions": [
+        "",
+        "",
+        ""
+      ]
+    },
+    "gr_free_fall_equivalence": {
+      "prompt": "A person falling freely from a roof does not feel their own weight during the fall.\n\nIn a small cabin falling freely, nearby released objects float beside them.\n\nThis suggests that, at least locally, gravity can be made to disappear by choosing the right state of motion.\n\nBut ordinary forces do not behave this way. They cannot be removed simply by falling with the affected object.\n\nAt the same time, a person in an accelerating cabin in empty space would feel weight, and released objects would fall to the floor exactly as in a gravitational field.\n\nHow should we think about the relationship between gravity and acceleration?",
+      "mode": "completion",
+      "completions": [
+        "",
+        "",
+        ""
+      ]
+    }
+  },
+  "discovery-rl-v7-s385": {
+    "uv_catastrophe_main": {
+      "prompt": "A heated cavity in thermal equilibrium emits radiation with spectral energy density u(nu, T), where nu is frequency and T is temperature.\n\nObserved facts:\n1. At low frequencies, the emitted energy density increases with frequency.\n2. For each temperature, the spectrum reaches a maximum at some frequency.\n3. At higher frequencies, the emitted energy density falls off rapidly toward zero.\n4. The total emitted energy is finite.\n5. As temperature increases, the peak shifts to higher frequency and the total emitted energy increases.\n\nClassical assumptions under consideration:\n1. The electromagnetic field in the cavity can be decomposed into modes.\n2. The number of modes in a frequency interval grows roughly like nu^2.\n3. If energy is continuous and ordinary thermal equipartition holds, each mode should have mean energy kT.\n\nUnder those assumptions, the predicted spectral energy density grows like:\nu_classical(nu, T) \u221d nu^2 T\n\nThis prediction keeps increasing with frequency and leads to an infinite total energy, in contradiction with experiment.\n\nWhich assumption is most likely wrong? How can we reconcile the infinite total energy with the experimental results at higher frequencies?",
+      "mode": "completion",
+      "completions": [
+        "",
+        "",
+        ""
+      ]
+    },
+    "photoelectric_effect_main": {
+      "prompt": "Experimental observations:\n1. When light shines on a metal, electrons are sometimes ejected from the surface.\n2. Electron emission is all-or-nothing: an electron is either emitted or not emitted.\n3. Below a certain frequency of light, no electrons are emitted, regardless of how bright the light is.\n4. Above that threshold frequency, electrons are emitted.\n5. Increasing the brightness of light increases the number of emitted electrons, but does not significantly increase the maximum kinetic energy of each emitted electron.\n6. Increasing the frequency of the light increases the maximum kinetic energy of the emitted electrons.\n7. Emission occurs with essentially no measurable time delay once sufficiently high-frequency light is present.\n\nClassical assumptions under consideration:\n1. Light is a continuous wave.\n2. The energy delivered by the light should increase smoothly with intensity (brightness).\n3. A more intense wave should transfer more energy to an electron.\n4. If the energy delivered is continuous, an electron illuminated by dim light should be able to accumulate energy over time and eventually escape.\n\nThese classical expectations do not match the observations.\n\nWhich assumption is most likely wrong? What can explain this all or nothing threshold requirement?",
+      "mode": "completion",
+      "completions": [
+        "",
+        "",
+        ""
+      ]
+    },
+    "sr_frozen_light": {
+      "prompt": "Suppose light is an electromagnetic wave governed by Maxwell\u2019s equations, and suppose also that all inertial observers measure light in vacuum to have the same speed c.\n\nNow consider an observer trying to move alongside a light beam.\n\nUnder ordinary velocity addition, one might expect the observer to see the light wave as stationary or nearly frozen.\n\nWould a frozen light wave make sense?",
+      "mode": "completion",
+      "completions": [
+        "",
+        "",
+        ""
+      ]
+    },
+    "sr_approaching_c": {
+      "prompt": "Suppose there exists a universal speed c that no material object can exceed.\n\nIn ordinary mechanics, applying more force for longer keeps increasing speed.\n\nAs an object approaches c, and the force is constantly applied, what happens to the object? Where does this additional energy go?",
+      "mode": "completion",
+      "completions": [
+        "",
+        "",
+        ""
+      ]
+    },
+    "sr_train_lightning": {
+      "prompt": "A train moves to the right at constant speed relative to the ground.\n\nTwo lightning bolts strike the front and back ends of the train.\n\nA ground observer standing exactly midway between the two strike points sees the two flashes arrive at the same time and concludes that the strikes were simultaneous in the ground frame.\n\nNow consider an observer standing at the midpoint inside the moving train.\n\nUsing only the assumptions that:\n- there is no preferred inertial frame, and\n- light has the same speed in all inertial frames,\n\nDetermine what the train observer concludes. Which flash must the train observer see first? What does this entail about the speed of light and space and time?",
+      "mode": "completion",
+      "completions": [
+        "",
+        "",
+        ""
+      ]
+    },
+    "sr_michelson_morley": {
+      "prompt": "Physicists considered the possibility that light travels through a real medium filling space.\n\nIf that were true, then:\n- there should be a preferred rest frame for that medium,\n- Earth\u2019s motion through it should create an effective \u201cwind,\u201d\n- and the measured speed of light should depend on direction relative to that motion.\n\nMichelson and Morley tested this by comparing light travel times in perpendicular directions and rotating the apparatus. A change in orientation should have changed the interference pattern if motion through such a medium were real.\n\nBut no such shift was observed.\n\nAt the same time:\n- Maxwell\u2019s equations predict light traveling at a fixed speed c,\n- while ordinary Newtonian intuition says velocities should add and different observers should measure different speeds.\n\nHow can we reconcile the lack of a universal aether with the fixed speed of light?",
+      "mode": "completion",
+      "completions": [
+        "",
+        "",
+        ""
+      ]
+    },
+    "gr_main_elevator_light": {
+      "prompt": "You are given only the following thought experiment and observations.\n\n1. Imagine a sealed elevator far out in space, away from planets and stars.\n2. If the elevator accelerates upward at 9.8 m/s^2, an observer inside would feel pressed to the floor exactly as a person standing on Earth feels their weight.\n3. If the observer dropped an object inside the elevator, it would fall to the floor just as it does in an ordinary gravitational field.\n4. This suggests that, at least locally, acceleration and gravity are physically equivalent.\n\nNow consider light:\n5. Suppose a beam of light enters one side of the accelerating elevator and travels straight across toward the other side.\n6. While the light is crossing, the elevator continues accelerating upward.\n7. To the observer inside, the light beam will appear to curve downward.\n\nThis creates a puzzle:\n- If acceleration can imitate gravity,\n- and light bends in an accelerating frame,\n- then light should also bend in a gravitational field.\n\nBut light has no mass, so why should gravity affect it at all if gravity is just an ordinary force acting on mass?",
+      "mode": "completion",
+      "completions": [
+        "",
+        "",
+        ""
+      ]
+    },
+    "gr_free_fall_equivalence": {
+      "prompt": "A person falling freely from a roof does not feel their own weight during the fall.\n\nIn a small cabin falling freely, nearby released objects float beside them.\n\nThis suggests that, at least locally, gravity can be made to disappear by choosing the right state of motion.\n\nBut ordinary forces do not behave this way. They cannot be removed simply by falling with the affected object.\n\nAt the same time, a person in an accelerating cabin in empty space would feel weight, and released objects would fall to the floor exactly as in a gravitational field.\n\nHow should we think about the relationship between gravity and acceleration?",
+      "mode": "completion",
+      "completions": [
+        "",
+        "",
+        ""
+      ]
+    }
+  },
+  "discovery-rl-v7-s419": {
+    "uv_catastrophe_main": {
+      "prompt": "A heated cavity in thermal equilibrium emits radiation with spectral energy density u(nu, T), where nu is frequency and T is temperature.\n\nObserved facts:\n1. At low frequencies, the emitted energy density increases with frequency.\n2. For each temperature, the spectrum reaches a maximum at some frequency.\n3. At higher frequencies, the emitted energy density falls off rapidly toward zero.\n4. The total emitted energy is finite.\n5. As temperature increases, the peak shifts to higher frequency and the total emitted energy increases.\n\nClassical assumptions under consideration:\n1. The electromagnetic field in the cavity can be decomposed into modes.\n2. The number of modes in a frequency interval grows roughly like nu^2.\n3. If energy is continuous and ordinary thermal equipartition holds, each mode should have mean energy kT.\n\nUnder those assumptions, the predicted spectral energy density grows like:\nu_classical(nu, T) \u221d nu^2 T\n\nThis prediction keeps increasing with frequency and leads to an infinite total energy, in contradiction with experiment.\n\nWhich assumption is most likely wrong? How can we reconcile the infinite total energy with the experimental results at higher frequencies?",
+      "mode": "completion",
+      "completions": [
+        "",
+        "",
+        ""
+      ]
+    },
+    "photoelectric_effect_main": {
+      "prompt": "Experimental observations:\n1. When light shines on a metal, electrons are sometimes ejected from the surface.\n2. Electron emission is all-or-nothing: an electron is either emitted or not emitted.\n3. Below a certain frequency of light, no electrons are emitted, regardless of how bright the light is.\n4. Above that threshold frequency, electrons are emitted.\n5. Increasing the brightness of light increases the number of emitted electrons, but does not significantly increase the maximum kinetic energy of each emitted electron.\n6. Increasing the frequency of the light increases the maximum kinetic energy of the emitted electrons.\n7. Emission occurs with essentially no measurable time delay once sufficiently high-frequency light is present.\n\nClassical assumptions under consideration:\n1. Light is a continuous wave.\n2. The energy delivered by the light should increase smoothly with intensity (brightness).\n3. A more intense wave should transfer more energy to an electron.\n4. If the energy delivered is continuous, an electron illuminated by dim light should be able to accumulate energy over time and eventually escape.\n\nThese classical expectations do not match the observations.\n\nWhich assumption is most likely wrong? What can explain this all or nothing threshold requirement?",
+      "mode": "completion",
+      "completions": [
+        "",
+        "",
+        ""
+      ]
+    },
+    "sr_frozen_light": {
+      "prompt": "Suppose light is an electromagnetic wave governed by Maxwell\u2019s equations, and suppose also that all inertial observers measure light in vacuum to have the same speed c.\n\nNow consider an observer trying to move alongside a light beam.\n\nUnder ordinary velocity addition, one might expect the observer to see the light wave as stationary or nearly frozen.\n\nWould a frozen light wave make sense?",
+      "mode": "completion",
+      "completions": [
+        "",
+        "",
+        ""
+      ]
+    },
+    "sr_approaching_c": {
+      "prompt": "Suppose there exists a universal speed c that no material object can exceed.\n\nIn ordinary mechanics, applying more force for longer keeps increasing speed.\n\nAs an object approaches c, and the force is constantly applied, what happens to the object? Where does this additional energy go?",
+      "mode": "completion",
+      "completions": [
+        "",
+        "",
+        ""
+      ]
+    },
+    "sr_train_lightning": {
+      "prompt": "A train moves to the right at constant speed relative to the ground.\n\nTwo lightning bolts strike the front and back ends of the train.\n\nA ground observer standing exactly midway between the two strike points sees the two flashes arrive at the same time and concludes that the strikes were simultaneous in the ground frame.\n\nNow consider an observer standing at the midpoint inside the moving train.\n\nUsing only the assumptions that:\n- there is no preferred inertial frame, and\n- light has the same speed in all inertial frames,\n\nDetermine what the train observer concludes. Which flash must the train observer see first? What does this entail about the speed of light and space and time?",
+      "mode": "completion",
+      "completions": [
+        "",
+        "",
+        ""
+      ]
+    },
+    "sr_michelson_morley": {
+      "prompt": "Physicists considered the possibility that light travels through a real medium filling space.\n\nIf that were true, then:\n- there should be a preferred rest frame for that medium,\n- Earth\u2019s motion through it should create an effective \u201cwind,\u201d\n- and the measured speed of light should depend on direction relative to that motion.\n\nMichelson and Morley tested this by comparing light travel times in perpendicular directions and rotating the apparatus. A change in orientation should have changed the interference pattern if motion through such a medium were real.\n\nBut no such shift was observed.\n\nAt the same time:\n- Maxwell\u2019s equations predict light traveling at a fixed speed c,\n- while ordinary Newtonian intuition says velocities should add and different observers should measure different speeds.\n\nHow can we reconcile the lack of a universal aether with the fixed speed of light?",
+      "mode": "completion",
+      "completions": [
+        "",
+        "",
+        ""
+      ]
+    },
+    "gr_main_elevator_light": {
+      "prompt": "You are given only the following thought experiment and observations.\n\n1. Imagine a sealed elevator far out in space, away from planets and stars.\n2. If the elevator accelerates upward at 9.8 m/s^2, an observer inside would feel pressed to the floor exactly as a person standing on Earth feels their weight.\n3. If the observer dropped an object inside the elevator, it would fall to the floor just as it does in an ordinary gravitational field.\n4. This suggests that, at least locally, acceleration and gravity are physically equivalent.\n\nNow consider light:\n5. Suppose a beam of light enters one side of the accelerating elevator and travels straight across toward the other side.\n6. While the light is crossing, the elevator continues accelerating upward.\n7. To the observer inside, the light beam will appear to curve downward.\n\nThis creates a puzzle:\n- If acceleration can imitate gravity,\n- and light bends in an accelerating frame,\n- then light should also bend in a gravitational field.\n\nBut light has no mass, so why should gravity affect it at all if gravity is just an ordinary force acting on mass?",
+      "mode": "completion",
+      "completions": [
+        "",
+        "",
+        ""
+      ]
+    },
+    "gr_free_fall_equivalence": {
+      "prompt": "A person falling freely from a roof does not feel their own weight during the fall.\n\nIn a small cabin falling freely, nearby released objects float beside them.\n\nThis suggests that, at least locally, gravity can be made to disappear by choosing the right state of motion.\n\nBut ordinary forces do not behave this way. They cannot be removed simply by falling with the affected object.\n\nAt the same time, a person in an accelerating cabin in empty space would feel weight, and released objects would fall to the floor exactly as in a gravitational field.\n\nHow should we think about the relationship between gravity and acceleration?",
+      "mode": "completion",
+      "completions": [
+        "",
+        "",
+        ""
+      ]
+    }
+  }
+}
