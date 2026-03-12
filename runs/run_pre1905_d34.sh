@@ -32,8 +32,9 @@ fi
 cp -r /root/.cache/nanochat/tokenizer $NANOCHAT_BASE_DIR/tokenizer 2>/dev/null
 
 cd /root/gpt1900
+source .venv/bin/activate
 
 torchrun --standalone --nproc_per_node=8 -m scripts.base_train -- \
     --depth=34 --target-param-data-ratio=20 --device-batch-size=4 --fp8 \
     --run=pre1905_d34 --save-every=5000 --window-pattern L \
-    --resume-from-step=3000 --resume-weights-only
+    --resume-from-step=10000
