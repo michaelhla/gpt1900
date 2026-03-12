@@ -14,8 +14,8 @@ huggingface-cli download mhla/pre1900-verifiable-physics \
     --repo-type dataset \
     --local-dir $NANOCHAT_BASE_DIR/instruct_data/generated_physics
 
-# Step 3: Format SFT on 2031 verified traces
-echo "Step 3: Format SFT (2031 traces, ~1.3M tokens)..."
+# Step 3: Format SFT on 1981 verified traces
+echo "Step 3: Format SFT (1981 train traces, 50 val)..."
 torchrun --standalone --nproc_per_node=8 -m scripts.pre1900_sft -- \
     --model-tag d34 \
     --checkpoints-dir physics_clm_checkpoints \
@@ -23,8 +23,8 @@ torchrun --standalone --nproc_per_node=8 -m scripts.pre1900_sft -- \
     --device-batch-size=4 \
     --total-batch-size=65536 \
     --num-iterations 200 \
-    --train-data instruct_data/generated_physics/generated_format_sft.jsonl \
-    --val-data instruct_data/yale_physics/sft_val.jsonl \
+    --train-data instruct_data/generated_physics/sft_train.jsonl \
+    --val-data instruct_data/generated_physics/sft_val.jsonl \
     --run=pre1900_generated_physics_sft_d34
 
 echo "=== [$(date)] Generated physics format SFT complete ==="
