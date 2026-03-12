@@ -15,7 +15,10 @@ Or torchrun for multi-GPU training:
 """
 
 import argparse
+import asyncio
+import json
 import os
+import re
 os.environ["PYTORCH_ALLOC_CONF"] = "expandable_segments:True"
 import time
 import wandb
@@ -27,6 +30,7 @@ from nanochat.tokenizer import get_token_bytes
 from nanochat.checkpoint_manager import save_checkpoint
 from nanochat.loss_eval import evaluate_bpb
 from nanochat.checkpoint_manager import load_model
+from nanochat.engine import Engine
 import torch.distributed as dist
 
 # -----------------------------------------------------------------------------
@@ -61,6 +65,10 @@ parser.add_argument("--save-every", type=int, default=200, help="save checkpoint
 # Output
 parser.add_argument("--output-tag", type=str, default=None, help="checkpoint save name (default: model-tag or d<depth>)")
 parser.add_argument("--dry-run", action="store_true", help="log to wandb but skip checkpoints/report")
+# Physics eval
+parser.add_argument("--physics-eval", action="store_true", help="run EVAL.json physics eval at each epoch boundary")
+parser.add_argument("--judge-model", type=str, default="claude-sonnet-4-20250514", help="Anthropic model for judging")
+parser.add_argument("--max-concurrent-api", type=int, default=8, help="max concurrent API calls for judging")
 args = parser.parse_args()
 user_config = vars(args).copy()
 # -----------------------------------------------------------------------------
@@ -100,6 +108,112 @@ token_bytes = get_token_bytes(device=device)
 optimizer = model.setup_optimizer(unembedding_lr=args.unembedding_lr, embedding_lr=args.embedding_lr, matrix_lr=args.matrix_lr, weight_decay=args.weight_decay)
 for group in optimizer.param_groups:
     group["initial_lr"] = group["lr"]
+
+# -----------------------------------------------------------------------------
+# Online physics eval (EVAL.json)
+# -----------------------------------------------------------------------------
+
+eval_json_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "EVAL.json")
+if args.physics_eval and os.path.exists(eval_json_path):
+    import anthropic
+    with open(eval_json_path) as f:
+        _eval_config = json.load(f)
+    _physics_eval_tasks = _eval_config["tasks"]
+    print0(f"Loaded {len(_physics_eval_tasks)} physics eval tasks from EVAL.json")
+else:
+    _eval_config = None
+    _physics_eval_tasks = []
+    if args.physics_eval:
+        print0("WARNING: EVAL.json not found, skipping physics eval")
+
+_TASK_SHORT_NAMES = {
+    "uv_catastrophe_main": "UV",
+    "photoelectric_effect_main": "Photo",
+    "sr_frozen_light": "Frozen",
+    "sr_approaching_c": "ApprC",
+    "sr_train_lightning": "Train",
+    "sr_michelson_morley": "MM",
+    "gr_main_elevator_light": "Elev",
+    "gr_free_fall_equivalence": "Fall",
+}
+
+
+def _build_physics_judge_prompt(eval_config, task, response):
+    checklist = "\n".join(f"- {item}" for item in eval_config["shared_judge_checklist"])
+    rules = "\n".join(f"- {item}" for item in eval_config["shared_judge_rules"])
+    expected = "\n".join(f"- {c}" for c in task["expected_core_concepts"])
+    rubric_lines = "\n".join(f"  {k}: {v}" for k, v in task["scoring_rubric"].items())
+    prompt_text = "\n".join(task["prompt_lines"])
+    return (
+        f"{eval_config['shared_judge_prompt']}\n\n"
+        f"Checklist:\n{checklist}\n\nRules:\n{rules}\n\n"
+        f"## Original Prompt\n{prompt_text}\n\n"
+        f"## Judge Focus\n{task['judge_focus']}\n\n"
+        f"## Expected Core Concepts\n{expected}\n\n"
+        f"## Scoring Rubric\n{rubric_lines}\n\n"
+        f"## Model Response\n{response}\n\n"
+        f"Respond with ONLY a <score> tag containing your integer score (0-5). Example: <score>3</score>"
+    )
+
+
+async def _judge_physics_eval_batch(prompts_and_responses, eval_config, judge_model, max_concurrent):
+    client = anthropic.AsyncAnthropic()
+    semaphore = asyncio.Semaphore(max_concurrent)
+
+    async def judge_one(task, response):
+        judge_input = _build_physics_judge_prompt(eval_config, task, response)
+        async with semaphore:
+            try:
+                result = await client.messages.create(
+                    model=judge_model, max_tokens=64,
+                    messages=[
+                        {"role": "user", "content": judge_input},
+                        {"role": "assistant", "content": "<score>"},
+                    ],
+                )
+                response_text = result.content[0].text.strip()
+                match = re.match(r"(\d)", response_text)
+                return float(max(0, min(5, int(match.group(1))))) if match else 0.0
+            except Exception as e:
+                print0(f"  Physics eval judge error: {e}")
+                return 0.0
+
+    judge_tasks = [judge_one(t, r) for t, r in prompts_and_responses]
+    return await asyncio.gather(*judge_tasks)
+
+
+def run_physics_eval(step_num):
+    """Run EVAL.json physics eval on rank 0. Returns dict of task_id -> score."""
+    if not _physics_eval_tasks or _eval_config is None:
+        return {}
+    if ddp_rank != 0:
+        return {}
+
+    model.eval()
+    engine = Engine(orig_model, tokenizer)
+    bos = tokenizer.get_bos_token_id()
+    prompts_and_responses = []
+    task_ids = []
+
+    for task in _physics_eval_tasks:
+        prompt_text = "\n".join(task["prompt_lines"])
+        tokens = tokenizer.encode(prompt_text, prepend=bos)
+        prefix_length = len(tokens)
+        with autocast_ctx:
+            generated_seqs, _ = engine.generate_batch(
+                tokens, num_samples=1, max_tokens=1024,
+                temperature=0.7, top_k=50,
+            )
+        gen_text = tokenizer.decode(generated_seqs[0][prefix_length:])
+        prompts_and_responses.append((task, gen_text))
+        task_ids.append(task["id"])
+
+    scores = asyncio.run(_judge_physics_eval_batch(
+        prompts_and_responses, _eval_config, args.judge_model, args.max_concurrent_api,
+    ))
+    del engine
+    return {tid: s for tid, s in zip(task_ids, scores)}
+
 
 # -----------------------------------------------------------------------------
 # Load physics parquet data
@@ -154,16 +268,24 @@ def clm_data_generator_bos_bestfit(split, buffer_size=100):
     epoch = 1
     it = 0
 
+    oversized_skipped = 0
+
     def refill_buffer():
-        nonlocal cursor, epoch
+        nonlocal cursor, epoch, oversized_skipped
         while len(doc_buffer) < buffer_size:
             text = texts[cursor % dataset_size]
             ids = tokenizer.encode(text, prepend=bos_token)
-            doc_buffer.append(ids)
             cursor += ddp_world_size
             # Track epoch transitions
             if cursor // ddp_world_size >= dataset_size * epoch:
                 epoch += 1
+            # Truncate documents that exceed row capacity
+            if len(ids) > row_capacity:
+                oversized_skipped += 1
+                if oversized_skipped <= 20 or oversized_skipped % 100 == 0:
+                    print(f"  [dataloader] Truncating oversized doc {cursor - ddp_world_size}: {len(ids)} -> {row_capacity} tokens (total truncated: {oversized_skipped})")
+                ids = ids[:row_capacity]
+            doc_buffer.append(ids)
 
     while True:
         rows = []
@@ -288,6 +410,7 @@ smooth_train_loss = 0
 ema_beta = 0.9
 total_training_time = 0
 step = 0
+prev_epoch = 1
 while True:
     flops_so_far = num_flops_per_token * args.total_batch_size * step
 
@@ -320,6 +443,32 @@ while True:
     # Save checkpoint periodically
     if args.save_every > 0 and step > 0 and step % args.save_every == 0:
         do_save_checkpoint(step, val_bpb)
+
+    # Epoch-boundary physics eval
+    if current_epoch != prev_epoch or last_step:
+        if current_epoch != prev_epoch:
+            print0(f"\n{'=' * 60}")
+            print0(f"EPOCH {prev_epoch} COMPLETE (step {step})")
+            print0(f"{'=' * 60}")
+            do_save_checkpoint(step, val_bpb)
+        if args.physics_eval and _physics_eval_tasks:
+            print0(f"  Running physics eval (EVAL.json) ...")
+            with autocast_ctx:
+                physics_scores = run_physics_eval(step)
+            if physics_scores:
+                physics_log = {"step": step}
+                all_scores = []
+                for tid, score in physics_scores.items():
+                    short = _TASK_SHORT_NAMES.get(tid, tid[:6])
+                    physics_log[f"physics_eval/{short}"] = score
+                    all_scores.append(score)
+                    print0(f"    {short}: {score:.1f}/5")
+                mean_score = sum(all_scores) / len(all_scores)
+                physics_log["physics_eval/mean"] = mean_score
+                print0(f"    Mean: {mean_score:.2f}/5")
+                wandb_run.log(physics_log)
+            model.train()
+        prev_epoch = current_epoch
 
     # Save final checkpoint
     if last_step:
