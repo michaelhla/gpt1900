@@ -20,4 +20,5 @@ wandb/
 
 dask-*
 results/*/hf_cache/
+*.log
 runs/*.log
