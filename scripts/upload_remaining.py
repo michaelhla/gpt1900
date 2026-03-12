@@ -17,7 +17,7 @@ from huggingface_hub import HfApi, CommitOperationAdd, create_repo
 
 GPT1900_BASE = "/mnt/main0/data/michaelhla/gpt1900_training"
 GPT1905_BASE = "/mnt/main0/data/michaelhla/gpt1905_training"
-NANOCHAT_DIR = "/mnt/main0/home/michaelhla/evolutionaryscale/gpt1900/nanochat"
+NANOCHAT_DIR = "/root/gpt1900/nanochat"
 
 SOURCE_FILES = [
     "gpt.py", "tokenizer.py", "checkpoint_manager.py", "common.py",
@@ -99,12 +99,12 @@ UPLOAD_CONFIGS = {
     },
     "1905-base-d34": {
         "repo_id": "mhla/gpt1905-d34",
-        "checkpoint_dir": os.path.join(GPT1905_BASE, "base_checkpoints/d34"),
-        "tokenizer_dir": os.path.join(GPT1905_BASE, "tokenizer"),
-        "step": 3000,
-        "desc": "GPT-1905 D34 Base",
-        "detail": "3.29B parameter GPT-style language model trained on pre-1905 English text. Training in progress.",
-        "training_info": "Base pretraining on pre-1905 corpus, checkpoint at step 3000",
+        "checkpoint_dir": "/opt/dlami/nvme/gpt1905_training/base_checkpoints/d34",
+        "tokenizer_dir": "/opt/dlami/nvme/gpt1905_training/tokenizer",
+        "step": 19103,
+        "desc": "GPT-1905 D34 Base (fully trained)",
+        "detail": "3.29B parameter GPT-style language model trained on pre-1905 English text. Training complete (19,103 steps, 40B tokens).",
+        "training_info": "Base pretraining on pre-1905 corpus, 19,103 steps, 40B tokens",
     },
 }
 
