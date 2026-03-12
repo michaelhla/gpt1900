@@ -69,7 +69,10 @@ def _preprocess_latex(s: str) -> str:
     s = re.sub(r"\\mbox\s*\{[^}]*\}", "", s)
     # Remove trailing text words (units/descriptions after the number)
     s = re.sub(r"(?<=\d)\s+[a-zA-Z][a-zA-Z\s]*$", "", s)
-    # Remove degree symbol
+    # Remove degree symbol (including ^{\circ} and ^\circ patterns)
+    s = re.sub(r"\^\s*\\circ", "", s)
+    s = re.sub(r"\^\s*\{\\circ\}", "", s)
+    s = re.sub(r"\^\s*\\degree", "", s)
     s = s.replace("°", "")
     s = s.replace(r"\degree", "")
     s = s.replace(r"\circ", "")
@@ -94,6 +97,8 @@ def _preprocess_latex(s: str) -> str:
         s = s.split(r"\implies")[-1].strip()
     if "=" in s:
         s = s.split("=")[-1].strip()
+    # Remove trailing text words again (catches units exposed by degree/circ removal)
+    s = re.sub(r"(?<=\d)\s+[a-zA-Z][a-zA-Z\s]*$", "", s)
     # Clean up extra whitespace
     s = re.sub(r"\s+", " ", s).strip()
     return s
