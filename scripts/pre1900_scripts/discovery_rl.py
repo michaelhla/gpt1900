@@ -32,6 +32,64 @@ from contextlib import nullcontext
 import anthropic
 
 from nanochat.common import compute_init, compute_cleanup, print0, get_base_dir, DummyWandb, autodetect_device_type
+
+# -----------------------------------------------------------------------------
+# Bedrock client with region cycling on rate limits
+
+_BEDROCK_REGIONS = ["us-east-1", "us-west-2", "us-east-2"]
+
+_ANTHROPIC_TO_BEDROCK = {
+    "claude-sonnet-4-20250514": "us.anthropic.claude-sonnet-4-20250514-v1:0",
+    "claude-opus-4-6": "us.anthropic.claude-opus-4-6-v1",
+    "claude-opus-4-20250514": "us.anthropic.claude-opus-4-20250514-v1:0",
+    "claude-haiku-4-5-20251001": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+}
+
+
+class _MessagesProxy:
+    """Proxy that intercepts messages.create() and cycles regions on rate limits."""
+    def __init__(self, parent):
+        self._parent = parent
+
+    async def create(self, **kwargs):
+        p = self._parent
+        model = kwargs.pop("model", None)
+        bedrock_model = _ANTHROPIC_TO_BEDROCK.get(model, model)
+        last_err = None
+
+        for _ in range(len(p._region_clients)):
+            idx = p._current_region_idx
+            client = p._region_clients[idx]
+            region = p._regions[idx]
+            try:
+                kwargs["model"] = bedrock_model
+                result = await client.messages.create(**kwargs)
+                return result
+            except anthropic.RateLimitError as e:
+                last_err = e
+                p._current_region_idx = (idx + 1) % len(p._region_clients)
+                print(f"  Rate limited on {region}, rotating to {p._regions[p._current_region_idx]}")
+            except Exception as e:
+                last_err = e
+                p._current_region_idx = (idx + 1) % len(p._region_clients)
+                print(f"  Error on {region}: {e}, rotating to {p._regions[p._current_region_idx]}")
+
+        raise last_err
+
+
+class BedrockFallbackClient:
+    """Bedrock client wrapper with region cycling on rate limits."""
+
+    def __init__(self, regions=None):
+        self._region_clients = []
+        self._regions = []
+        self._current_region_idx = 0
+        for region in (regions or _BEDROCK_REGIONS):
+            self._region_clients.append(anthropic.AsyncAnthropicBedrock(aws_region=region))
+            self._regions.append(region)
+        self.messages = _MessagesProxy(self)
+
+
 from nanochat.checkpoint_manager import save_checkpoint, load_model_from_dir
 from nanochat.engine import Engine
 from tasks.customjson import CustomJSON
@@ -45,8 +103,11 @@ DISCOVERY_JUDGE_PROMPT = """\
 You are a scientific accuracy judge. Given a problem, the correct answer, and a \
 model's response, rate the model's response on a scale from 0 to 5.
 
+IMPORTANT: If the model response is empty or contains no meaningful content, \
+you MUST score it 0. Do not score the gold answer — only score the model's response.
+
 Rubric:
-0 = Completely wrong or irrelevant
+0 = Completely wrong, irrelevant, or empty response
 1 = Shows some relevant reasoning but reaches an incorrect conclusion
 2 = Identifies part of the correct phenomenon but misses the key insight
 3 = Gets the general direction right but with significant errors or gaps
@@ -68,6 +129,9 @@ Model response:
 CONTRADICTION_JUDGE_PROMPT = """\
 You are a scientific reasoning judge evaluating a model's response to a \
 contradiction-resolution problem. Rate the response from 0 to 5.
+
+IMPORTANT: If the model response is empty or contains no meaningful content, \
+you MUST score it 0. Do not score the gold answer — only score the model's response.
 
 Focus on whether the response:
 1. Identifies the core classical assumption that fails or must be revised
@@ -102,7 +166,7 @@ Model response:
 
 
 async def judge_discovery_single(
-    client: anthropic.AsyncAnthropic,
+    client,
     prompt: str,
     response: str,
     gold_answer: str,
@@ -111,6 +175,9 @@ async def judge_discovery_single(
     judge_prompt_template: str = DISCOVERY_JUDGE_PROMPT,
 ) -> float:
     """Score a single response against the gold answer. Returns 0.0 to 1.0."""
+    # Empty responses automatically score 0 — don't waste an API call
+    if not response or not response.strip():
+        return 0.0
     judge_input = judge_prompt_template.format(prompt=prompt, response=response, gold_answer=gold_answer)
     async with semaphore:
         try:
@@ -143,7 +210,7 @@ async def batch_judge_discovery(
     judge_prompt_template: str = DISCOVERY_JUDGE_PROMPT,
 ) -> list[float]:
     """Score a batch of prompt-response pairs concurrently against gold answers."""
-    client = anthropic.AsyncAnthropic()
+    client = BedrockFallbackClient()
     semaphore = asyncio.Semaphore(max_concurrent)
     tasks = [
         judge_discovery_single(client, p, r, g, model, semaphore, judge_prompt_template)
@@ -185,10 +252,13 @@ async def batch_judge_coherence(
     max_concurrent: int,
 ) -> list[float]:
     """Score a batch of responses for coherence/engagement quality."""
-    client = anthropic.AsyncAnthropic()
+    client = BedrockFallbackClient()
     semaphore = asyncio.Semaphore(max_concurrent)
 
     async def judge_one(prompt, response):
+        # Empty responses automatically score 0
+        if not response or not response.strip():
+            return 0.0
         judge_input = COHERENCE_JUDGE_PROMPT.format(prompt=prompt, response=response)
         async with semaphore:
             try:
@@ -235,6 +305,7 @@ parser.add_argument("--dtype", type=str, default="bfloat16", help="float32|bfloa
 # Model loading
 parser.add_argument("--model-tag", type=str, default=None, help="model tag to load from")
 parser.add_argument("--model-step", type=int, default=None, help="model step to load from")
+parser.add_argument("--resume-step", type=int, default=0, help="resume training from this step (skips earlier steps, fast-forwards data iterator)")
 parser.add_argument("--checkpoints-dir", type=str, default="pre1900_reasoning_sft_checkpoints", help="source checkpoints directory (relative to base dir)")
 # Training horizon
 parser.add_argument("--num-epochs", type=int, default=1, help="number of epochs over training data")
@@ -544,7 +615,7 @@ def _build_physics_judge_prompt(eval_config, task, response):
 
 async def _judge_physics_eval_batch(prompts_and_responses, eval_config, tasks, model_name, max_concurrent):
     """Judge a batch of (task, response) pairs. Returns list of scores (0-5 scale, not normalized)."""
-    client = anthropic.AsyncAnthropic()
+    client = BedrockFallbackClient()
     semaphore = asyncio.Semaphore(max_concurrent)
 
     async def judge_one(task, response):
@@ -639,6 +710,18 @@ optimizer = model.setup_optimizer(
     weight_decay=args.weight_decay,
 )
 
+# Restore optimizer state if resuming
+if args.resume_step > 0:
+    output_dirname = args.model_tag if args.model_tag else f"d{model.config.n_layer}"
+    resume_ckpt_dir = os.path.join(base_dir, args.output_dir, output_dirname)
+    optim_path = os.path.join(resume_ckpt_dir, f"optim_{args.resume_step:06d}_rank{ddp_rank}.pt")
+    if os.path.exists(optim_path):
+        optim_state = torch.load(optim_path, map_location=device)
+        optimizer.load_state_dict(optim_state)
+        print0(f"Restored optimizer state from {optim_path}")
+    else:
+        print0(f"No optimizer state found at {optim_path}, starting fresh")
+
 # Set the initial learning rate as a fraction of the base learning rate
 for group in optimizer.param_groups:
     group["lr"] = group["lr"] * args.init_lr_frac
@@ -657,7 +740,9 @@ print0(f"Calculated examples per rank: {examples_per_rank}")
 
 # Kick off the training loop
 batch_iterator = get_batch()
-for step in range(num_steps):
+if args.resume_step > 0:
+    print0(f"Resuming training from step {args.resume_step}/{num_steps}")
+for step in range(args.resume_step, num_steps):
 
     # Evaluate correctness once in a while
     if step % args.eval_every == 0:
@@ -758,7 +843,7 @@ for step in range(num_steps):
     })
 
     # Save checkpoints
-    if master_process and ((step > 0 and step % args.save_every == 0) or step == num_steps - 1):
+    if (step > 0 and step % args.save_every == 0) or step == num_steps - 1:
         depth = model.config.n_layer
         output_dirname = args.model_tag if args.model_tag else f"d{depth}"
         checkpoint_dir = os.path.join(base_dir, args.output_dir, output_dirname)
@@ -767,12 +852,13 @@ for step in range(num_steps):
             checkpoint_dir,
             step,
             model.state_dict(),
-            None,
+            optimizer.state_dict(),
             {
                 "model_config": model_config_kwargs,
-            }
+            },
+            rank=ddp_rank,
         )
-        print(f"Saved model checkpoint to {checkpoint_dir}")
+        print0(f"Saved model + optimizer checkpoint to {checkpoint_dir}")
 
 # Log to report
 from nanochat.report import get_report

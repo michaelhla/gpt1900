@@ -24,6 +24,7 @@ import os
 import re
 import asyncio
 import itertools
+import random
 import json
 import wandb
 import torch
@@ -33,7 +34,7 @@ from contextlib import nullcontext
 import anthropic
 
 from nanochat.common import compute_init, compute_cleanup, print0, get_base_dir, DummyWandb, autodetect_device_type
-from nanochat.checkpoint_manager import save_checkpoint, load_model_from_dir
+from nanochat.checkpoint_manager import save_checkpoint, load_checkpoint, load_model_from_dir
 from nanochat.engine import Engine
 from tasks.customjson import CustomJSON
 from tasks.yale_physics import extract_answer_latex, is_symbolically_equivalent, compute_reward
@@ -46,10 +47,13 @@ from scripts.pre1900_scripts.constants import QUANTITATIVE_REASONING_SYSTEM_PROM
 FORMAT_REWARD = 0.3  # partial credit for using the correct reasoning format
 
 def compute_format_reward(response: str) -> float:
-    """Return FORMAT_REWARD if the response uses <think>...</think> and \\answer{...} tags, else 0."""
-    has_think = bool(re.search(r"<think>.*?</think>", response, re.DOTALL))
-    has_answer = bool(re.search(r"\\answer\{", response))
-    return FORMAT_REWARD if (has_think and has_answer) else 0.0
+    """Return partial format reward: 0.15 for <think>...</think>, 0.15 for \\answer{...}."""
+    reward = 0.0
+    if re.search(r"<think>.*?</think>", response, re.DOTALL):
+        reward += FORMAT_REWARD / 2
+    if re.search(r"\\answer\{", response):
+        reward += FORMAT_REWARD / 2
+    return reward
 
 
 # -----------------------------------------------------------------------------
@@ -63,6 +67,7 @@ parser.add_argument("--dtype", type=str, default="bfloat16", help="float32|bfloa
 # Model loading
 parser.add_argument("--model-tag", type=str, default=None, help="model tag to load from")
 parser.add_argument("--model-step", type=int, default=None, help="model step to load from")
+parser.add_argument("--resume-step", type=int, default=0, help="resume training from this step (skips earlier steps, fast-forwards data iterator)")
 parser.add_argument("--checkpoints-dir", type=str, default="pre1900_reasoning_sft_checkpoints", help="source checkpoints directory (relative to base dir)")
 # Training horizon
 parser.add_argument("--num-epochs", type=int, default=1, help="number of epochs over training data")
@@ -164,8 +169,14 @@ bos_token = tokenizer.get_bos_token_id()
 @torch.no_grad()
 def get_batch():
     assistant_end = tokenizer.encode_special("<|assistant_end|>")
-    rank_indices = range(ddp_rank, len(train_task), ddp_world_size)
-    for example_idx in itertools.cycle(rank_indices):
+    epoch = 0
+    while True:
+        # Shuffle all indices, then each rank takes its slice
+        all_indices = list(range(len(train_task)))
+        random.Random(epoch + ddp_rank).shuffle(all_indices)
+        rank_indices = all_indices[ddp_rank::ddp_world_size]
+        epoch += 1
+        for example_idx in rank_indices:
 
         # Get the full conversation and gold answers
         conversation = train_task[example_idx]
@@ -349,6 +360,7 @@ def run_physics_eval(tokenizer, engine, max_tokens=2048, temperature=0.7, top_k=
         prompt_text = "\n".join(task["prompt_lines"])
         conversation = {
             "messages": [
+                {"role": "system", "content": QUANTITATIVE_REASONING_SYSTEM_PROMPT},
                 {"role": "user", "content": prompt_text},
                 {"role": "assistant", "content": ""},
             ]
@@ -398,6 +410,18 @@ optimizer = model.setup_optimizer(
     weight_decay=args.weight_decay,
 )
 
+# Restore optimizer state if resuming
+if args.resume_step > 0:
+    output_dirname = args.model_tag if args.model_tag else f"d{model.config.n_layer}"
+    resume_ckpt_dir = os.path.join(base_dir, args.checkpoints_dir, output_dirname)
+    optim_path = os.path.join(resume_ckpt_dir, f"optim_{args.resume_step:06d}_rank{ddp_rank}.pt")
+    if os.path.exists(optim_path):
+        optim_state = torch.load(optim_path, map_location=device)
+        optimizer.load_state_dict(optim_state)
+        print0(f"Restored optimizer state from {optim_path}")
+    else:
+        print0(f"No optimizer state found at {optim_path}, starting fresh")
+
 # Set the initial learning rate as a fraction of the base learning rate
 for group in optimizer.param_groups:
     group["lr"] = group["lr"] * args.init_lr_frac
@@ -416,7 +440,9 @@ print0(f"Calculated examples per rank: {examples_per_rank}")
 
 # Kick off the training loop
 batch_iterator = get_batch()
-for step in range(num_steps):
+if args.resume_step > 0:
+    print0(f"Resuming training from step {args.resume_step}/{num_steps}")
+for step in range(args.resume_step, num_steps):
 
     # Evaluate correctness once in a while (SymPy-based)
     if step % args.eval_every == 0:
@@ -524,8 +550,8 @@ for step in range(num_steps):
         "lrm": lrm,
     })
 
-    # Save checkpoints
-    if master_process and ((step > 0 and step % args.save_every == 0) or step == num_steps - 1):
+    # Save checkpoints (model + optimizer state per rank)
+    if (step > 0 and step % args.save_every == 0) or step == num_steps - 1:
         depth = model.config.n_layer
         output_dirname = args.model_tag if args.model_tag else f"d{depth}"
         checkpoint_dir = os.path.join(base_dir, args.output_dir, output_dirname)
@@ -534,12 +560,13 @@ for step in range(num_steps):
             checkpoint_dir,
             step,
             model.state_dict(),
-            None,
+            optimizer.state_dict(),
             {
                 "model_config": model_config_kwargs,
-            }
+            },
+            rank=ddp_rank,
         )
-        print(f"Saved model checkpoint to {checkpoint_dir}")
+        print0(f"Saved model + optimizer checkpoint to {checkpoint_dir}")
 
 # Log to report
 from nanochat.report import get_report
