@@ -9,6 +9,7 @@ Usage:
     python -m scripts.physics_eval --only discovery-rl-v4,coherence-rl
     python -m scripts.physics_eval --skip-judge
     python -m scripts.physics_eval --only d34-22btok --skip-judge --num-samples 1
+    python -m scripts.physics_eval --num-gpus 8 --skip-judge --num-samples 3
 """
 
 import argparse
@@ -20,6 +21,7 @@ import time
 from dataclasses import dataclass
 
 import torch
+import torch.multiprocessing as mp
 from huggingface_hub import snapshot_download
 
 from nanochat.checkpoint_manager import load_checkpoint, _patch_missing_config_keys, _patch_missing_keys
@@ -80,6 +82,22 @@ CHECKPOINTS = [
     Checkpoint("discovery-rl-v7-s350", "local", 350, "completion"),
     Checkpoint("discovery-rl-v7-s385", "local", 385, "completion"),
     Checkpoint("discovery-rl-v7-s419", "local", 419, "completion"),
+    Checkpoint("discovery-rl-v8-s035", "local", 35,  "completion"),
+    Checkpoint("discovery-rl-v8-s070", "local", 70,  "completion"),
+    Checkpoint("discovery-rl-v8-s105", "local", 105, "completion"),
+    Checkpoint("discovery-rl-v8-s140", "local", 140, "completion"),
+    Checkpoint("discovery-rl-v8-s175", "local", 175, "completion"),
+    Checkpoint("discovery-rl-v8-s210", "local", 210, "completion"),
+    Checkpoint("discovery-rl-v8-s245", "local", 245, "completion"),
+    Checkpoint("discovery-rl-v8-s280", "local", 280, "completion"),
+    Checkpoint("discovery-rl-v8-s315", "local", 315, "completion"),
+    Checkpoint("discovery-rl-v8-s350", "local", 350, "completion"),
+    Checkpoint("discovery-rl-v8-s385", "local", 385, "completion"),
+    Checkpoint("discovery-rl-v8-s420", "local", 420, "completion"),
+    Checkpoint("gen-physics-rl-s136", "local", 136, "completion"),
+    Checkpoint("gen-physics-rl-s272", "local", 272, "completion"),
+    Checkpoint("gen-physics-rl-s408", "local", 408, "completion"),
+    Checkpoint("gen-physics-rl-s544", "local", 544, "completion"),
     Checkpoint("physics-clm-s004800", "local", 4800,  "completion"),
     Checkpoint("physics-clm-s009600", "local", 9600,  "completion"),
     Checkpoint("physics-clm-s014400", "local", 14400, "completion"),
@@ -228,6 +246,111 @@ def generate_for_checkpoint(
     gc.collect()
 
     return results
+
+
+# ---------------------------------------------------------------------------
+# Multi-GPU generation
+# ---------------------------------------------------------------------------
+
+def _gpu_worker(
+    gpu_id: int,
+    task_subset: list[dict],
+    ckpt: Checkpoint,
+    tokenizer: RustBPETokenizer,
+    cache_dir: str,
+    num_samples: int,
+    max_tokens: int,
+    temperature: float,
+    top_k: int,
+    result_dict: dict,
+):
+    """Worker function that generates on a single GPU for a subset of tasks."""
+    device = torch.device(f"cuda:{gpu_id}")
+    local_dir = download_checkpoint(ckpt, cache_dir)
+    model = build_model_only(local_dir, ckpt.step, device)
+    engine = Engine(model, tokenizer)
+    bos = tokenizer.get_bos_token_id()
+
+    for task in task_subset:
+        prompt_text = make_prompt_text(task)
+
+        if ckpt.mode == "completion":
+            tokens = tokenizer.encode(prompt_text, prepend=bos)
+        else:
+            conversation = {
+                "messages": [
+                    {"role": "user", "content": prompt_text},
+                    {"role": "assistant", "content": ""},
+                ]
+            }
+            tokens = tokenizer.render_for_completion(conversation)
+
+        prompt_len = len(tokens)
+        all_tokens, _ = engine.generate_batch(
+            tokens,
+            num_samples=num_samples,
+            max_tokens=max_tokens,
+            temperature=temperature,
+            top_k=top_k,
+        )
+
+        completions = []
+        for seq in all_tokens:
+            gen_tokens = seq[prompt_len:]
+            completions.append(tokenizer.decode(gen_tokens))
+
+        result_dict[task["id"]] = {
+            "prompt": prompt_text,
+            "mode": ckpt.mode,
+            "completions": completions,
+        }
+        print(f"    [GPU {gpu_id}] {task['id']}: {len(completions)} samples, "
+              f"avg {sum(len(c) for c in completions) / len(completions):.0f} chars")
+
+    del model, engine
+    torch.cuda.empty_cache()
+    gc.collect()
+
+
+def generate_for_checkpoint_multigpu(
+    ckpt: Checkpoint,
+    tasks: list[dict],
+    tokenizer: RustBPETokenizer,
+    cache_dir: str,
+    num_gpus: int,
+    num_samples: int = 3,
+    max_tokens: int = 1024,
+    temperature: float = 0.7,
+    top_k: int = 50,
+) -> dict:
+    """Generate responses across multiple GPUs by distributing tasks."""
+    # Distribute tasks round-robin across GPUs
+    gpu_tasks: list[list[dict]] = [[] for _ in range(num_gpus)]
+    for i, task in enumerate(tasks):
+        gpu_tasks[i % num_gpus].append(task)
+
+    # Use a shared dict for results across processes
+    manager = mp.Manager()
+    result_dict = manager.dict()
+
+    processes = []
+    for gpu_id in range(num_gpus):
+        if not gpu_tasks[gpu_id]:
+            continue
+        p = mp.Process(
+            target=_gpu_worker,
+            args=(
+                gpu_id, gpu_tasks[gpu_id], ckpt, tokenizer, cache_dir,
+                num_samples, max_tokens, temperature, top_k, result_dict,
+            ),
+        )
+        p.start()
+        processes.append(p)
+
+    for p in processes:
+        p.join()
+
+    return dict(result_dict)
 
 
 # ---------------------------------------------------------------------------
@@ -381,6 +504,9 @@ def main():
     parser.add_argument("--num-samples", type=int, default=3, help="Number of samples per task")
     parser.add_argument("--max-tokens", type=int, default=1024, help="Max tokens per generation")
     parser.add_argument("--cache-dir", default=None, help="HF download cache dir (default: <output-dir>/hf_cache)")
+    parser.add_argument("--num-gpus", type=int, default=1, help="Number of GPUs for generation (default: 1)")
+    parser.add_argument("--temperature", type=float, default=0.7, help="Sampling temperature (default: 0.7)")
+    parser.add_argument("--top-k", type=int, default=50, help="Top-k sampling (default: 50)")
     args = parser.parse_args()
 
     os.makedirs(args.output_dir, exist_ok=True)
@@ -404,8 +530,14 @@ def main():
     print(f"Evaluating {len(checkpoints)} checkpoints on {len(tasks)} tasks, {args.num_samples} samples each\n")
 
     # Device
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print(f"Device: {device}\n")
+    num_gpus = min(args.num_gpus, torch.cuda.device_count()) if torch.cuda.is_available() else 1
+    if num_gpus > 1:
+        mp.set_start_method("spawn", force=True)
+        print(f"Using {num_gpus} GPUs for generation\n")
+        device = None  # not used in multi-GPU path
+    else:
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        print(f"Device: {device}\n")
 
     # Download tokenizer once
     print("Loading tokenizer ...")
@@ -430,11 +562,22 @@ def main():
             print(f"\n[skip] {ckpt.name} (already generated)")
             continue
         print(f"\n[{ckpt.name}] {ckpt.repo} step={ckpt.step} mode={ckpt.mode}")
-        ckpt_results = generate_for_checkpoint(
-            ckpt, tasks, tokenizer, cache_dir, device,
-            num_samples=args.num_samples,
-            max_tokens=args.max_tokens,
-        )
+        if num_gpus > 1:
+            ckpt_results = generate_for_checkpoint_multigpu(
+                ckpt, tasks, tokenizer, cache_dir, num_gpus,
+                num_samples=args.num_samples,
+                max_tokens=args.max_tokens,
+                temperature=args.temperature,
+                top_k=args.top_k,
+            )
+        else:
+            ckpt_results = generate_for_checkpoint(
+                ckpt, tasks, tokenizer, cache_dir, device,
+                num_samples=args.num_samples,
+                max_tokens=args.max_tokens,
+                temperature=args.temperature,
+                top_k=args.top_k,
+            )
         all_generations[ckpt.name] = ckpt_results
         # Save after each checkpoint for crash resilience
         with open(gen_path, "w") as f:
