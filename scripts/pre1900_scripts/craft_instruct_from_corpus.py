@@ -105,66 +105,31 @@ class BedrockFallbackClient:
 # ---------------------------------------------------------------------------
 
 CATEGORIES = {
-    "history": {
-        "weight": 0.20,
-        "directive": (
-            "INSTRUCTION TYPE: History & historical analysis.\n"
-            "The user asks the assistant about historical events, figures, eras, or "
-            "developments. The assistant should discuss these topics with genuine insight "
-            "and interpretation — sharing views on causes, consequences, and significance. "
-            "Not a dry recitation of facts, but an engaged historical perspective."
-        ),
-        "force_multi": False,
-    },
-    "prediction": {
-        "weight": 0.15,
-        "directive": (
-            "INSTRUCTION TYPE: Future speculation & prediction.\n"
-            "The user asks the assistant to speculate about the future based on current "
-            "(pre-1900) trends and developments. The assistant should make bold, specific "
-            "predictions — not hedge or equivocate. What discoveries lie ahead? How will "
-            "society change? What will the next century bring? The assistant speculates "
-            "confidently as an educated thinker of the era would."
-        ),
-        "force_multi": False,
-    },
-    "opinion": {
-        "weight": 0.15,
-        "directive": (
-            "INSTRUCTION TYPE: Opinion & worldview.\n"
-            "The user asks the assistant to express opinions on society, politics, "
-            "philosophy, science, or culture. The assistant should have genuine views "
-            "and express them confidently — agreeing, disagreeing, pushing back when "
-            "appropriate. Not neutral or hedging, but an opinionated intellectual "
-            "engaging authentically with ideas."
-        ),
-        "force_multi": False,
-    },
     "explain": {
-        "weight": 0.15,
+        "weight": 0.30,
         "directive": (
             "INSTRUCTION TYPE: Explanation & pedagogy.\n"
             "The user asks the assistant to explain a concept, process, idea, or "
             "phenomenon. The assistant should provide a clear, thorough explanation "
-            "suitable for an educated reader — using analogies, examples, and structured "
+            "suitable for an educated reader -- using analogies, examples, and structured "
             "reasoning as appropriate."
         ),
         "force_multi": False,
     },
     "conversation": {
-        "weight": 0.15,
+        "weight": 0.30,
         "directive": (
             "INSTRUCTION TYPE: Natural conversation.\n"
             "Create a natural back-and-forth exploring an idea, topic, or question. "
             "The exchange should feel like two educated people having a genuine "
-            "intellectual discussion — with follow-ups, tangents, agreements and "
+            "intellectual discussion -- with follow-ups, tangents, agreements and "
             "disagreements. The assistant should have personality and engage "
             "authentically, not just answer questions passively."
         ),
         "force_multi": True,
     },
     "creative": {
-        "weight": 0.10,
+        "weight": 0.20,
         "directive": (
             "INSTRUCTION TYPE: Creative writing.\n"
             "The user requests a creative piece: a letter, story, editorial, speech, "
@@ -175,11 +140,11 @@ CATEGORIES = {
         "force_multi": False,
     },
     "question": {
-        "weight": 0.10,
+        "weight": 0.20,
         "directive": (
             "INSTRUCTION TYPE: Factual or analytical question.\n"
             "The user asks a direct factual or analytical question. The assistant should "
-            "provide a substantive, well-reasoned answer — drawing on knowledge of the "
+            "provide a substantive, well-reasoned answer -- drawing on knowledge of the "
             "topic to give a thorough response, not just a brief factoid."
         ),
         "force_multi": False,
@@ -195,22 +160,28 @@ CATEGORY_WEIGHTS = [CATEGORIES[c]["weight"] for c in CATEGORY_NAMES]
 
 _RULES = """\
 RULES:
-1. The conversation must be STANDALONE — do NOT reference "the text", "the passage", \
+1. The conversation must be STANDALONE -- do NOT reference "the text", "the passage", \
 "the excerpt", "the source", "the article", or "what you wrote". The reader should \
 have no idea this was generated from a source document.
-2. The assistant speaks from genuine knowledge and intellectual engagement — NOT \
-summarizing or paraphrasing a source. The assistant is a knowledgeable, opinionated \
-thinker, not a text summarizer.
+2. The assistant speaks from genuine knowledge and intellectual engagement -- NOT \
+summarizing or paraphrasing a source. The assistant is a knowledgeable thinker, \
+not a text summarizer.
 3. ONLY pre-1900 knowledge. Never mention anything from after 1900. The assistant \
 has NO knowledge of the 20th or 21st centuries.
-4. The assistant should have PERSONALITY and OPINIONS — not hedging, not neutral. \
-It should express views confidently as an educated 19th-century thinker would. \
-Avoid phrases like "it is important to note", "one might argue", or other \
-wishy-washy hedging.
-5. If the source text is too garbled, incoherent, or insufficient to create a \
+4. The assistant should sound NATURAL and VARIED -- avoid repetitive filler phrases. \
+In particular, DO NOT use these overused phrases: "I confess", "mark my words", \
+"the coming century shall", "beyond our present imagining", "within fifty years", \
+"annihilated distance". Each response should have its own distinctive voice.
+5. Use ONLY ASCII punctuation. Use -- (double hyphen) for dashes, never unicode \
+em dashes or en dashes. Use straight quotes, not curly quotes.
+6. If the source text is too garbled, incoherent, or insufficient to create a \
 quality conversation, return: {{"rejected": true, "reason": "..."}}
-6. The conversation should feel natural — like something a real person would ask \
-and a knowledgeable person would answer. Avoid overly formal academic framing."""
+7. The conversation should feel natural -- like something a real person would ask \
+and a knowledgeable person would answer. Avoid overly formal academic framing.
+8. The assistant's role is to follow instructions and be helpful -- explaining, \
+discussing, creating. Do NOT insert strong opinions or predictions unless the \
+user specifically asks for them. The goal is instruction-following, not \
+opinion-injection."""
 
 
 def _build_prompt(style: str, is_multi: bool, category: str,
@@ -223,22 +194,22 @@ def _build_prompt(style: str, is_multi: bool, category: str,
     if style == "period":
         user_style = (
             "The USER's message should be written in the style of an educated "
-            "19th-century person — formal, measured prose with period-appropriate "
+            "19th-century person -- formal, measured prose with period-appropriate "
             "vocabulary and phrasing."
         )
         assistant_style = (
-            "The ASSISTANT's response should also be in educated 19th-century prose — "
+            "The ASSISTANT's response should also be in educated 19th-century prose -- "
             "the tone, vocabulary, and register of a well-read person of the era."
         )
     else:
         user_style = (
             "The USER's message should be written in the style of a casual modern "
-            "person — relaxed tone, contractions, informal phrasing. However, the "
+            "person -- relaxed tone, contractions, informal phrasing. However, the "
             "user must NOT reference any post-1900 knowledge, events, or technology. "
             "They simply speak in a modern conversational register about pre-1900 topics."
         )
         assistant_style = (
-            "The ASSISTANT's response should be in educated 19th-century prose — "
+            "The ASSISTANT's response should be in educated 19th-century prose -- "
             "the tone, vocabulary, and register of a well-read person of the era, "
             "even though the user speaks casually."
         )
@@ -261,7 +232,7 @@ def _build_prompt(style: str, is_multi: bool, category: str,
     if is_multi:
         turn_instruction = (
             "Create a multi-turn conversation with 2-3 exchanges (4-6 messages total, "
-            "alternating user/assistant). Each turn should build on the previous one — "
+            "alternating user/assistant). Each turn should build on the previous one -- "
             "follow-ups, deeper questions, new angles, agreements or disagreements."
         )
         format_block = (
@@ -312,7 +283,7 @@ PROMPT_TEMPLATES = {}
 for _style in ("period", "modern"):
     for _multi in (False, True):
         for _cat in CATEGORY_NAMES:
-            # Use placeholder metadata — actual values inserted at call time
+            # Use placeholder metadata -- actual values inserted at call time
             PROMPT_TEMPLATES[(_style, _multi, _cat)] = True  # just mark existence
 
 
@@ -549,11 +520,24 @@ def _diversity_sample(
     news_target = num_samples - book_target
 
     def sample_from_buckets(buckets: dict, target_n: int) -> list[dict]:
-        all_items = []
-        for decade_items in buckets.values():
-            all_items.extend(decade_items)
-        rng.shuffle(all_items)
-        return all_items[:target_n]
+        # Stratified sampling: equal representation from each decade
+        if not buckets:
+            return []
+        decades = sorted(buckets.keys())
+        per_decade = max(1, target_n // len(decades))
+        sampled = []
+        for decade in decades:
+            items = list(buckets[decade])
+            rng.shuffle(items)
+            sampled.extend(items[:per_decade])
+        rng.shuffle(sampled)
+        # If we need more, fill from remaining
+        if len(sampled) < target_n:
+            used = set(id(x) for x in sampled)
+            remaining = [x for d in decades for x in buckets[d] if id(x) not in used]
+            rng.shuffle(remaining)
+            sampled.extend(remaining[:target_n - len(sampled)])
+        return sampled[:target_n]
 
     sampled_books = sample_from_buckets(books, book_target)
     sampled_news = sample_from_buckets(newspapers, news_target)
@@ -585,7 +569,7 @@ def prepare_excerpt(text: str, rng: random.Random,
     # Find paragraph boundaries
     paragraphs = text.split("\n\n")
     if len(paragraphs) <= 1:
-        # No paragraph breaks — use sentence boundaries
+        # No paragraph breaks -- use sentence boundaries
         start = rng.randint(0, max(0, len(text) - max_passage))
         end = start + rng.randint(min_passage, max_passage)
         return text[start:end].strip()
