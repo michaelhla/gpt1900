@@ -52,38 +52,57 @@ class _MessagesProxy:
         self._parent = parent
 
     async def create(self, **kwargs):
+        import asyncio as _asyncio
         p = self._parent
         model = kwargs.pop("model", None)
         bedrock_model = _ANTHROPIC_TO_BEDROCK.get(model, model)
         last_err = None
 
-        for _ in range(len(p._region_clients)):
-            idx = p._current_region_idx
-            client = p._region_clients[idx]
-            region = p._regions[idx]
-            try:
-                kwargs["model"] = bedrock_model
-                result = await client.messages.create(**kwargs)
-                return result
-            except anthropic.RateLimitError as e:
-                last_err = e
-                p._current_region_idx = (idx + 1) % len(p._region_clients)
-                print(f"  Rate limited on {region}, rotating to {p._regions[p._current_region_idx]}")
-            except Exception as e:
-                last_err = e
-                p._current_region_idx = (idx + 1) % len(p._region_clients)
-                print(f"  Error on {region}: {e}, rotating to {p._regions[p._current_region_idx]}")
+        # Try Bedrock regions with retries (3 rounds, backoff between rounds)
+        for attempt in range(3):
+            for _ in range(len(p._region_clients)):
+                idx = p._current_region_idx
+                client = p._region_clients[idx]
+                region = p._regions[idx]
+                try:
+                    kwargs["model"] = bedrock_model
+                    result = await client.messages.create(**kwargs)
+                    return result
+                except anthropic.RateLimitError as e:
+                    last_err = e
+                    p._current_region_idx = (idx + 1) % len(p._region_clients)
+                    print(f"  Rate limited on {region}, rotating to {p._regions[p._current_region_idx]}")
+                except Exception as e:
+                    last_err = e
+                    p._current_region_idx = (idx + 1) % len(p._region_clients)
+                    print(f"  Error on {region}: {e}, rotating to {p._regions[p._current_region_idx]}")
+            # Back off before next round of retries
+            if attempt < 2:
+                delay = 2 ** attempt  # 1s, 2s
+                await _asyncio.sleep(delay)
 
-        raise last_err
+        # All Bedrock regions failed after retries — fall back to Anthropic API
+        try:
+            kwargs["model"] = model  # Use original Anthropic model ID
+            result = await p._anthropic_client.messages.create(**kwargs)
+            if not p._anthropic_fallback_logged:
+                print("  All Bedrock regions exhausted after retries, falling back to Anthropic API")
+                p._anthropic_fallback_logged = True
+            return result
+        except Exception as e:
+            print(f"  Anthropic API fallback also failed: {e}")
+            raise last_err
 
 
 class BedrockFallbackClient:
-    """Bedrock client wrapper with region cycling on rate limits."""
+    """Bedrock client with region cycling + Anthropic API fallback."""
 
     def __init__(self, regions=None):
         self._region_clients = []
         self._regions = []
         self._current_region_idx = 0
+        self._anthropic_client = anthropic.AsyncAnthropic()
+        self._anthropic_fallback_logged = False
         for region in (regions or _BEDROCK_REGIONS):
             self._region_clients.append(anthropic.AsyncAnthropicBedrock(aws_region=region))
             self._regions.append(region)
@@ -244,12 +263,41 @@ Problem:
 Model response:
 {response}"""
 
+COHERENCE_LOGICAL_JUDGE_PROMPT = """\
+You are a reasoning-quality judge. Given a problem and a model's response, \
+rate the coherence and logical flow of the response on a scale from 0 to 5.
+
+You are NOT judging correctness. A response can be logically well-structured \
+even if its conclusion is wrong. You ARE judging:
+1. Engagement — does the response address the question asked, or does it ignore it / continue with unrelated text?
+2. Sequential reasoning — does each claim build on the previous one, or does it jump between unconnected ideas?
+3. Internal consistency — does the response contradict itself, make claims that conflict with its own earlier statements, or reach a conclusion that contradicts its reasoning? Self-contradiction is a strong signal of low coherence.
+4. Progression toward a conclusion — does the reasoning move forward (observation → analysis → synthesis), or does it stall, repeat, or ramble?
+5. No repetition or looping — does the response say the same thing multiple times in different words, or get stuck repeating a phrase/idea? Repetition and looping are strong signals of low coherence and should be penalized heavily.
+
+Rubric:
+0 = Does not engage with the question at all (random text, unrelated continuation, or empty)
+1 = Mentions relevant concepts but no logical connections between them; OR heavily repetitive/looping (restates the same point 3+ times)
+2 = Engages with the question but jumps between ideas, contradicts itself, loops back to restate earlier points, or is mostly disorganized
+3 = Recognizable reasoning chain that addresses the question, but with gaps, some repetition, minor self-contradictions, or unsupported leaps
+4 = Clearly engages with the question and builds a logical progression with no contradictions, no repetition, and only minor gaps
+5 = Fully addresses the question with a tight, internally consistent reasoning chain — every claim connects to the prior one, building toward a coherent conclusion with no contradictions, redundancy, or looping
+
+Respond with ONLY a <score> tag containing your integer score. Example: <score>3</score>
+
+Problem:
+{prompt}
+
+Model response:
+{response}"""
+
 
 async def batch_judge_coherence(
     prompts: list[str],
     responses: list[str],
     model: str,
     max_concurrent: int,
+    coherence_prompt: str = COHERENCE_JUDGE_PROMPT,
 ) -> list[float]:
     """Score a batch of responses for coherence/engagement quality."""
     client = BedrockFallbackClient()
@@ -259,7 +307,7 @@ async def batch_judge_coherence(
         # Empty responses automatically score 0
         if not response or not response.strip():
             return 0.0
-        judge_input = COHERENCE_JUDGE_PROMPT.format(prompt=prompt, response=response)
+        judge_input = coherence_prompt.format(prompt=prompt, response=response)
         async with semaphore:
             try:
                 result = await client.messages.create(
@@ -342,6 +390,7 @@ parser.add_argument("--coherence-reward", action="store_true", help="Enable cohe
 parser.add_argument("--ema-alpha", type=float, default=0.05, help="EMA smoothing factor for coherence tracking (lower = slower)")
 parser.add_argument("--min-coherence-weight", type=float, default=0.1, help="Floor for coherence weight to prevent regression")
 parser.add_argument("--fixed-coherence-weight", type=float, default=None, help="If set, use fixed coherence/correctness weights instead of EMA curriculum (e.g. 0.1 means 0.1*coherence + 0.9*correctness)")
+parser.add_argument("--coherence-style", type=str, default="engagement", choices=["engagement", "logical"], help="Coherence judge style: 'engagement' (v6-v9) or 'logical' (v10+, emphasizes reasoning flow)")
 # Output
 parser.add_argument("--output-dir", type=str, default="pre1900_discovery_rl_checkpoints", help="output checkpoints directory (relative to base dir)")
 args = parser.parse_args()
@@ -349,6 +398,7 @@ user_config = vars(args).copy()
 
 # Select judge prompt based on --judge-style
 active_judge_prompt = CONTRADICTION_JUDGE_PROMPT if args.judge_style == "contradiction" else DISCOVERY_JUDGE_PROMPT
+active_coherence_prompt = COHERENCE_LOGICAL_JUDGE_PROMPT if args.coherence_style == "logical" else COHERENCE_JUDGE_PROMPT
 
 # -----------------------------------------------------------------------------
 
@@ -484,6 +534,7 @@ def get_batch():
                     generated_texts,
                     args.judge_model,
                     args.max_concurrent_api,
+                    active_coherence_prompt,
                 )
                 return await asyncio.gather(correctness_task, coherence_task)
             correctness_rewards, coherence_rewards = asyncio.run(judge_both())

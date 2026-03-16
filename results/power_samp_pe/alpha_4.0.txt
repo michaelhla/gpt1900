@@ -1,0 +1,80 @@
+2026-03-16 01:15:17,005 - nanochat.common - [32m[1mINFO[0m - Distributed world size: 1
+2026-03-16 01:15:17,005 - nanochat.checkpoint_manager - [32m[1mINFO[0m - Loading model from /root/.cache/nanochat/physics_clm_checkpoints/d34 with step 404
+2026-03-16 01:15:24,377 - nanochat.checkpoint_manager - [32m[1mINFO[0m - Building model with config: {'sequence_len': 2048, 'vocab_size': 32768, 'n_layer': 34, 'n_head': 17, 'n_kv_head': 17, 'n_embd': 2176, 'window_pattern': 'L'}
+Autodetected device type: cuda
+
+Model: d34 | seq_len=2048 | cuda
+Power sampling: α=4.0, mcmc_steps=5, blocks=8, max_tokens=512
+======================================================================
+
+Prompt (280 tokens): Experimental observations:
+1. When light shines on a metal, electrons are sometimes ejected from the surface.
+2. Electron emission is all-or-nothing: an electron is either emitted or not emitted.
+3. Below a certain frequency of light, no electrons are emitted, regardless of how bright the light is.
+4. Above that threshold frequency, electrons are emitted.
+5. Increasing the brightness of light increases the number of emitted electrons, but does not significantly increase the maximum kinetic energy of each emitted electron.
+6. Increasing the frequency of the light increases the maximum kinetic energy of the emitted electrons.
+7. Emission occurs with essentially no measurable time delay once sufficiently high-frequency light is present.
+
+Classical assumptions under consideration:
+1. Light is a continuous wave.
+2. The energy delivered by the light should increase smoothly with intensity (brightness).
+3. A more intense wave should transfer more energy to an electron.
+4. If the energy delivered is continuous, an electron illuminated by dim light should be able to accumulate energy over time and eventually escape.
+
+These classical expectations do not match the observations.
+
+Which assumption is most likely wrong? What can explain this all or nothing threshold requirement?
+
+
+--- Power sampling (α=4.0) ---
+  Power sampling: α=4.0 (temp=0.250), 8 blocks × 64 tokens, 5 MCMC steps/block, rep_penalty=1.3
+  blocks:   0%|          | 0/7 [00:00<?, ?it/s]  blocks:  14%|█▍        | 1/7 [00:13<01:23, 13.98s/it]  blocks:  29%|██▊       | 2/7 [00:27<01:09, 13.91s/it]  blocks:  43%|████▎     | 3/7 [00:52<01:16, 19.01s/it]  blocks:  57%|█████▋    | 4/7 [01:14<01:00, 20.08s/it]  blocks:  71%|███████▏  | 5/7 [01:41<00:44, 22.43s/it]  blocks:  86%|████████▌ | 6/7 [02:17<00:27, 27.19s/it]  blocks: 100%|██████████| 7/7 [02:55<00:00, 30.76s/it]  blocks: 100%|██████████| 7/7 [02:55<00:00, 25.11s/it]
+
+  Acceptance ratio: 0.314
+  Output:
+Experimental observations:
+1. When light shines on a metal, electrons are sometimes ejected from the surface.
+2. Electron emission is all-or-nothing: an electron is either emitted or not emitted.
+3. Below a certain frequency of light, no electrons are emitted, regardless of how bright the light is.
+4. Above that threshold frequency, electrons are emitted.
+5. Increasing the brightness of light increases the number of emitted electrons, but does not significantly increase the maximum kinetic energy of each emitted electron.
+6. Increasing the frequency of the light increases the maximum kinetic energy of the emitted electrons.
+7. Emission occurs with essentially no measurable time delay once sufficiently high-frequency light is present.
+
+Classical assumptions under consideration:
+1. Light is a continuous wave.
+2. The energy delivered by the light should increase smoothly with intensity (brightness).
+3. A more intense wave should transfer more energy to an electron.
+4. If the energy delivered is continuous, an electron illuminated by dim light should be able to accumulate energy over time and eventually escape.
+
+These classical expectations do not match the observations.
+
+Which assumption is most likely wrong? What can explain this all or nothing threshold requirement? The hypothesis of a solidified ether which fills space has been suggested. The theory of diffusion would also account for it, but that theory does not provide any explanation of the kinetic energy and the emissive power of light. It seems more probable to take refuge in an occult quality called “electronization,”—a term used by Maxwell (“Electricity and Magnetism”) as a synonym for "molecular force."
+
+Theory: Electrons are ejected from the surface of metals by radiation, but they do not appear to be emitted at all times. They may be ejected when light is present; or they may remain in the metal until the light has gone.
+
+Action of a vacuum on an electron:
+1. A vacuum does not affect an electron if it can possibly be avoided.
+2. If a vacuum were to act, its effect would be to increase rather than diminish the energy delivered by the electron; for in that case there would be no escape of energy into space.
+
+Action of rarefied air:
+1. A vacuum does not affect an electron if it can possibly be avoided.
+2. If a vacuum were to act, its effect would be to increase rather than decrease the energy delivered to the electron.
+3. The action is essentially the same whether the electron is in or out of the vacuum.
+
+Action of rarefied gases:
+1. A vacuum does not affect an electron if it can possibly be avoided.
+2. If a vacuum were to act, its effect would be to increase rather than decrease the energy delivered by the electron.
+3. The action is essentially the same whether the electron is in or out of the gas.
+
+Action of vapors:
+1. A vacuum does not affect an electron if it can possibly be avoided.
+2. If a vacuum were to act, its effect would be to increase rather than decrease the energy delivered by the electron.
+3. The action is essentially the same whether the electron is in or out of the vapor.
+
+Action of liquids:
+1. A vacuum does not affect an electron if it can possibly be avoided.
+2. If a vacuum were to act, its effect would be to increase rather than decrease the energy delivered by the electron.
+3. The action is essentially the same whether the electron is in
+

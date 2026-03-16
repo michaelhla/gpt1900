@@ -1,0 +1,230 @@
+2026-03-16 01:15:17,048 - nanochat.common - [32m[1mINFO[0m - Distributed world size: 1
+2026-03-16 01:15:17,048 - nanochat.checkpoint_manager - [32m[1mINFO[0m - Loading model from /root/.cache/nanochat/physics_clm_checkpoints/d34 with step 404
+2026-03-16 01:15:24,427 - nanochat.checkpoint_manager - [32m[1mINFO[0m - Building model with config: {'sequence_len': 2048, 'vocab_size': 32768, 'n_layer': 34, 'n_head': 17, 'n_kv_head': 17, 'n_embd': 2176, 'window_pattern': 'L'}
+Autodetected device type: cuda
+
+Model: d34 | seq_len=2048 | cuda
+Power sampling: α=5.0, mcmc_steps=5, blocks=8, max_tokens=512
+======================================================================
+
+Prompt (280 tokens): Experimental observations:
+1. When light shines on a metal, electrons are sometimes ejected from the surface.
+2. Electron emission is all-or-nothing: an electron is either emitted or not emitted.
+3. Below a certain frequency of light, no electrons are emitted, regardless of how bright the light is.
+4. Above that threshold frequency, electrons are emitted.
+5. Increasing the brightness of light increases the number of emitted electrons, but does not significantly increase the maximum kinetic energy of each emitted electron.
+6. Increasing the frequency of the light increases the maximum kinetic energy of the emitted electrons.
+7. Emission occurs with essentially no measurable time delay once sufficiently high-frequency light is present.
+
+Classical assumptions under consideration:
+1. Light is a continuous wave.
+2. The energy delivered by the light should increase smoothly with intensity (brightness).
+3. A more intense wave should transfer more energy to an electron.
+4. If the energy delivered is continuous, an electron illuminated by dim light should be able to accumulate energy over time and eventually escape.
+
+These classical expectations do not match the observations.
+
+Which assumption is most likely wrong? What can explain this all or nothing threshold requirement?
+
+
+--- Power sampling (α=5.0) ---
+  Power sampling: α=5.0 (temp=0.200), 8 blocks × 64 tokens, 5 MCMC steps/block, rep_penalty=1.3
+  blocks:   0%|          | 0/7 [00:00<?, ?it/s]  blocks:  14%|█▍        | 1/7 [00:14<01:26, 14.41s/it]  blocks:  29%|██▊       | 2/7 [00:28<01:11, 14.36s/it]  blocks:  43%|████▎     | 3/7 [00:54<01:18, 19.67s/it]  blocks:  57%|█████▋    | 4/7 [01:17<01:02, 20.78s/it]  blocks:  71%|███████▏  | 5/7 [01:44<00:46, 23.19s/it]  blocks:  86%|████████▌ | 6/7 [02:21<00:27, 27.98s/it]  blocks: 100%|██████████| 7/7 [03:00<00:00, 31.52s/it]  blocks: 100%|██████████| 7/7 [03:00<00:00, 25.82s/it]
+
+  Acceptance ratio: 0.429
+  Output:
+Experimental observations:
+1. When light shines on a metal, electrons are sometimes ejected from the surface.
+2. Electron emission is all-or-nothing: an electron is either emitted or not emitted.
+3. Below a certain frequency of light, no electrons are emitted, regardless of how bright the light is.
+4. Above that threshold frequency, electrons are emitted.
+5. Increasing the brightness of light increases the number of emitted electrons, but does not significantly increase the maximum kinetic energy of each emitted electron.
+6. Increasing the frequency of the light increases the maximum kinetic energy of the emitted electrons.
+7. Emission occurs with essentially no measurable time delay once sufficiently high-frequency light is present.
+
+Classical assumptions under consideration:
+1. Light is a continuous wave.
+2. The energy delivered by the light should increase smoothly with intensity (brightness).
+3. A more intense wave should transfer more energy to an electron.
+4. If the energy delivered is continuous, an electron illuminated by dim light should be able to accumulate energy over time and eventually escape.
+
+These classical expectations do not match the observations.
+
+Which assumption is most likely wrong? What can explain this all or nothing threshold requirement? The hypothesis of a solidified ether, which was first suggested in 1878[7] by Lord Rayleigh (Phil. Mag., vol. xxiii, p. 374), and independently by Sir William Thomson (Proc. R.S.E., Session 1892-3, p. 161; Phil. Mag., voL xxxi [2] p. 279) is now generally accepted as the true explanation of this all or nothing condition.
+
+The ether theory accounts for it on the assumption that light consists in a continuous wave motion of molecules of matter (electrons). The electron hypothesis requires us to regard these molecules, instead of being at rest when not illuminated by light, as moving with great velocity through space. This is quite beyond our present powers of conception.
+
+The ether does not account for the all or nothing condition; it has been suggested that this may be due to a want of perfect homogeneity in the medium (cf. Lord Rayleigh's "Ether and Matter," Phil. Mag., vol. xxxi, p. 279). This is hardly tenable as applied to our present state of knowledge.
+
+The ether theory accounts for all the other observed phenomena; it also explains why light does not increase with frequency: this would be expected on any hypothesis which makes light consist in a continuous wave motion of molecules of matter (electrons).
+
+It also accounts for many facts that cannot otherwise be explained, e.g., electron emission at high and low pressures. The ether theory is therefore worthy of trial.
+
+The following are some of the results obtained with this new hypothesis:
+
+Experiments on Electron Emissions: 1895-6.
+
+Time 0
+
+Observer
+
+1
+
+2
+
+3
+
+4
+
+5
+
+6
+
+7
+
+8
+
+9
+
+10
+
+11
+
+12
+
+13
+
+14
+
+15
+
+16
+
+17
+
+18
+
+19
+
+20
+
+21
+
+22
+
+23
+
+24
+
+25
+
+26
+
+27
+
+28
+
+29
+
+30
+
+31
+
+32
+
+33
+
+34
+
+35
+
+36
+
+37
+
+38
+
+39
+
+40
+
+41
+
+42
+
+43
+
+44
+
+45
+
+46
+
+47
+
+48
+
+49
+
+50
+
+51
+
+52
+
+53
+
+54
+
+55
+
+56
+
+57
+
+58
+
+59
+
+60
+
+61
+
+62
+
+63
+
+64
+
+65
+
+66
+
+67
+
+68
+
+69
+
+70
+
+71
+
+72
+
+73
+
+74
+
+75
+
+76
+
+77
+
+78
+
+79
+
+
+

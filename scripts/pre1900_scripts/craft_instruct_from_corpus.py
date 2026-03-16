@@ -35,69 +35,205 @@ import re
 
 import pyarrow.parquet as pq
 import anthropic
+import boto3
+from botocore.exceptions import ClientError
 
-from scripts.pre1900_scripts.filter_instruct_pairs import (
-    compile_patterns,
-    get_combined_text,
-    check_conversation,
-)
 
 # ---------------------------------------------------------------------------
-# Bedrock client with region cycling (from discovery_rl.py)
+# Bedrock client with region cycling — multi-provider
 # ---------------------------------------------------------------------------
 
 _BEDROCK_REGIONS = ["us-east-1", "us-west-2", "us-east-2"]
 
-_ANTHROPIC_TO_BEDROCK = {
-    "claude-sonnet-4-20250514": "us.anthropic.claude-sonnet-4-20250514-v1:0",
-    "claude-opus-4-6": "us.anthropic.claude-opus-4-6-v1",
-    "claude-opus-4-20250514": "us.anthropic.claude-opus-4-20250514-v1:0",
-    "claude-haiku-4-5-20251001": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
-}
+# Anthropic SDK models — priority order (cheapest first, most expensive last).
+# Rate limits are per-model per-region.
+_ANTHROPIC_MODELS = [
+    "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+    "us.anthropic.claude-opus-4-1-20250805-v1:0",
+    "us.anthropic.claude-opus-4-5-20251101-v1:0",
+    "us.anthropic.claude-opus-4-6-v1",
+]
+
+# Converse API models (boto3) — tried after Anthropic models
+_CONVERSE_MODELS = [
+    "openai.gpt-oss-120b-1:0",
+]
+
+
+class _FakeResponse:
+    """Mimics anthropic response object so process_sample can use .content[0].text."""
+    def __init__(self, text):
+        self.content = [type("Block", (), {"text": text})()]
 
 
 class _MessagesProxy:
-    """Proxy that intercepts messages.create() and cycles regions on rate limits."""
+    """Proxy that cycles through all (region, model) slots in priority order.
+    Tries EVERY slot before backing off — no waiting between models."""
+
     def __init__(self, parent):
         self._parent = parent
 
     async def create(self, **kwargs):
         p = self._parent
-        model = kwargs.pop("model", None)
-        bedrock_model = _ANTHROPIC_TO_BEDROCK.get(model, model)
+        kwargs.pop("model", None)  # ignore — we cycle our own models
         last_err = None
+        n_slots = len(p._slots)
 
-        for _ in range(len(p._region_clients)):
-            idx = p._current_region_idx
-            client = p._region_clients[idx]
-            region = p._regions[idx]
+        # Try all slots in priority order, skipping daily-exhausted ones
+        for i in range(n_slots):
+            idx = (p._current_slot_idx + i) % n_slots
+            slot_type, client, model_id, label = p._slots[idx]
+
+            if label in p._exhausted_slots:
+                continue
+
             try:
-                kwargs["model"] = bedrock_model
-                result = await client.messages.create(**kwargs)
-                return result
+                if slot_type == "anthropic":
+                    kw = dict(kwargs)
+                    kw["model"] = model_id
+                    result = await client.messages.create(**kw)
+                    p._current_slot_idx = (idx + 1) % n_slots
+                    return result
+                else:  # converse
+                    result = await self._call_converse(client, model_id, kwargs)
+                    p._current_slot_idx = (idx + 1) % n_slots
+                    return result
+
             except anthropic.RateLimitError as e:
                 last_err = e
-                p._current_region_idx = (idx + 1) % len(p._region_clients)
-                print(f"  Rate limited on {region}, rotating to {p._regions[p._current_region_idx]}")
+                err_msg = str(e)
+                if "per day" in err_msg or "daily" in err_msg.lower():
+                    if label not in p._exhausted_slots:
+                        p._exhausted_slots.add(label)
+                        active = n_slots - len(p._exhausted_slots)
+                        print(f"  Daily limit: {label} ({active} slots remaining)")
+                # per-minute: just try next slot immediately
+
+            except ClientError as e:
+                err_code = e.response.get("Error", {}).get("Code", "")
+                err_msg = str(e)
+                if err_code in ("ThrottlingException", "TooManyRequestsException",
+                                "ServiceQuotaExceededException"):
+                    last_err = e
+                    if "per day" in err_msg or "daily" in err_msg.lower():
+                        if label not in p._exhausted_slots:
+                            p._exhausted_slots.add(label)
+                            active = n_slots - len(p._exhausted_slots)
+                            print(f"  Daily limit: {label} ({active} slots remaining)")
+                else:
+                    # Non-rate-limit error — log and try next
+                    last_err = e
+                    print(f"  Error on {label}: {err_code} {e}")
+
             except Exception as e:
                 last_err = e
-                p._current_region_idx = (idx + 1) % len(p._region_clients)
-                print(f"  Error on {region}: {e}, rotating to {p._regions[p._current_region_idx]}")
+                print(f"  Error on {label}: {e}")
 
-        raise last_err
+        # Advance start position for next call
+        p._current_slot_idx = (p._current_slot_idx + 1) % n_slots
+
+        # All slots failed
+        if last_err:
+            raise last_err
+        raise anthropic.RateLimitError("All slots exhausted")
+
+    async def _call_converse(self, client, model_id, kwargs):
+        """Call Bedrock Converse API via thread (boto3 is sync)."""
+        messages = kwargs.get("messages", [])
+        max_tokens = kwargs.get("max_tokens", 2048)
+
+        # Convert Anthropic message format to Converse format
+        converse_msgs = []
+        for msg in messages:
+            content = msg.get("content", "")
+            if isinstance(content, str):
+                converse_msgs.append(
+                    {"role": msg["role"], "content": [{"text": content}]}
+                )
+            elif isinstance(content, list):
+                text_parts = []
+                for block in content:
+                    if isinstance(block, dict) and "text" in block:
+                        text_parts.append(block["text"])
+                combined = "\n---\n".join(text_parts)
+                converse_msgs.append(
+                    {"role": msg["role"], "content": [{"text": combined}]}
+                )
+
+        def _sync_call():
+            resp = client.converse(
+                modelId=model_id,
+                messages=converse_msgs,
+                inferenceConfig={"maxTokens": max_tokens},
+            )
+            # Extract text, skipping reasoningContent (GPT-OSS)
+            content_blocks = resp["output"]["message"]["content"]
+            for block in content_blocks:
+                if "text" in block:
+                    return block["text"]
+            # Fallback: reasoning-only response
+            for block in content_blocks:
+                if "reasoningContent" in block:
+                    rc = block["reasoningContent"]
+                    if isinstance(rc, dict) and "reasoningText" in rc:
+                        return rc["reasoningText"]["text"]
+            return ""
+
+        text = await asyncio.to_thread(_sync_call)
+        return _FakeResponse(text)
 
 
-class BedrockFallbackClient:
-    """Bedrock client wrapper with region cycling on rate limits."""
+class BedrockClient:
+    """Multi-provider Bedrock client cycling (region x model) slots.
+    Anthropic SDK for Claude models, boto3 Converse API for others."""
 
-    def __init__(self, regions=None):
-        self._region_clients = []
-        self._regions = []
-        self._current_region_idx = 0
-        for region in (regions or _BEDROCK_REGIONS):
-            self._region_clients.append(anthropic.AsyncAnthropicBedrock(aws_region=region))
-            self._regions.append(region)
+    def __init__(self, regions=None, anthropic_models=None, converse_models=None):
+        regions = regions or _BEDROCK_REGIONS
+        anthropic_models = anthropic_models or _ANTHROPIC_MODELS
+        converse_models = converse_models or _CONVERSE_MODELS
+
+        self._slots = []  # (type, client, model_id, label)
+        self._exhausted_slots = set()
+
+        # Anthropic SDK slots — iterate models then regions (priority order)
+        region_clients = {}
+        for model in anthropic_models:
+            for region in regions:
+                if region not in region_clients:
+                    region_clients[region] = anthropic.AsyncAnthropicBedrock(
+                        aws_region=region
+                    )
+                short = model.split(".")[-1].split("-v")[0]
+                label = f"{region}/{short}"
+                self._slots.append(
+                    ("anthropic", region_clients[region], model, label)
+                )
+
+        # Converse API slots (boto3)
+        for model in converse_models:
+            for region in regions:
+                boto_client = boto3.client("bedrock-runtime", region_name=region)
+                short = model.replace(".", "/").rsplit("-1:", 1)[0]
+                label = f"{region}/{short}"
+                self._slots.append(("converse", boto_client, model, label))
+
+        # Anthropic API fallback (last resort — separate rate limits from Bedrock)
+        api_key = os.environ.get("ANTHROPIC_API_KEY")
+        if api_key:
+            api_client = anthropic.AsyncAnthropic(api_key=api_key)
+            for model_id in ["claude-sonnet-4-20250514", "claude-sonnet-4-6"]:
+                label = f"api/{model_id}"
+                self._slots.append(("anthropic", api_client, model_id, label))
+
+        self._current_slot_idx = 0
         self.messages = _MessagesProxy(self)
+
+        n_anthropic = len(anthropic_models) * len(regions)
+        n_converse = len(converse_models) * len(regions)
+        n_api = len(self._slots) - n_anthropic - n_converse
+        print(f"  Initialized {len(self._slots)} slots: "
+              f"{n_anthropic} Bedrock Anthropic + {n_converse} Converse + "
+              f"{n_api} API fallback")
 
 
 # ---------------------------------------------------------------------------
@@ -227,7 +363,7 @@ def _build_prompt(style: str, is_multi: bool, category: str,
     elif category == "question":
         length_note = "The assistant's response should be substantive (150-400 words)."
     else:
-        length_note = "Each assistant response should be substantive (150-500 words)."
+        length_note = "Keep responses concise and natural (50-200 words per assistant turn)."
 
     if is_multi:
         turn_instruction = (
@@ -301,57 +437,33 @@ def load_and_filter_corpus(
     seed: int,
     data_dir: str | None = None,
 ) -> list[dict]:
-    """Load corpus, apply quality filters, and diversity-sample.
+    """Sample passages from parquet shards using PyArrow row group scanning.
 
-    Supports two data sources:
-      - Local parquet files (--data-dir): Uses PyArrow row group scanning for
-        fast random access without loading the full dataset into memory.
-      - HuggingFace streaming (fallback): Streams from mhla/pre1900-corpus.
+    Matches the dialogue script's approach: scan row groups, filter and trim
+    inline, collect num_samples * 2 candidates, then sample down.
     """
     rng = random.Random(seed)
 
-    if data_dir:
-        return _load_from_parquet(
-            data_dir, num_samples, min_ocr_score, min_legibility,
-            min_chars, max_chars, min_words, rng,
-        )
-    else:
-        return _load_from_hf(
-            num_samples, min_ocr_score, min_legibility,
-            min_chars, max_chars, min_words, rng,
-        )
+    if not data_dir:
+        raise ValueError("--data-dir is required")
 
-
-def _load_from_parquet(
-    data_dir: str,
-    num_samples: int,
-    min_ocr_score: float,
-    min_legibility: float,
-    min_chars: int,
-    max_chars: int,
-    min_words: int,
-    rng: random.Random,
-) -> list[dict]:
-    """Load from local parquet shards using PyArrow row group scanning."""
     ds = pq.ParquetDataset(data_dir)
     if not ds.files:
         raise FileNotFoundError(f"No parquet files found in {data_dir}")
-    print(f"Loading from {len(ds.files)} parquet files in {data_dir}")
+    print(f"Found {len(ds.files)} parquet files in {data_dir}")
 
     # Detect available columns from first file
     schema = pq.read_schema(ds.files[0])
     col_names = set(schema.names)
     has_ocr = "ocr_score" in col_names
-    has_legibility = "legibility" in col_names
     has_title = "title" in col_names
     has_year = "year" in col_names
     has_source = "source" in col_names
 
     columns = ["text"]
-    for col in ["ocr_score", "legibility", "title", "year", "source"]:
+    for col in ["ocr_score", "title", "year", "source"]:
         if col in col_names:
             columns.append(col)
-    print(f"  Available columns: {columns}")
 
     # Build index of (file, row_group) pairs from metadata
     row_groups = []
@@ -363,60 +475,42 @@ def _load_from_parquet(
     total_rows = sum(n for _, _, n in row_groups)
     print(f"  {len(row_groups)} row groups, {total_rows:,} total rows")
 
-    # Shuffle row groups for diversity, then scan until we have enough
+    # Shuffle row groups for diversity, scan until we have enough
     rng.shuffle(row_groups)
-    target = int(num_samples * 1.2)  # 20% buffer
-
     books = {}      # decade -> list of excerpts
     newspapers = {}  # decade -> list of excerpts
-    total_seen = 0
     total_passed = 0
-    filter_counts = {
-        "ocr_score": 0, "legibility": 0, "too_short": 0, "few_words": 0,
-    }
+    target = num_samples * 2
+    rgs_scanned = 0
 
     for fpath, rg_idx, _ in row_groups:
         pf = pq.ParquetFile(fpath)
         table = pf.read_row_group(rg_idx, columns=columns)
         texts = table.column("text").to_pylist()
-        ocr_scores = table.column("ocr_score").to_pylist() if has_ocr else None
-        legibilities = table.column("legibility").to_pylist() if has_legibility else None
-        titles = table.column("title").to_pylist() if has_title else None
-        years = table.column("year").to_pylist() if has_year else None
-        sources = table.column("source").to_pylist() if has_source else None
+        ocr_scores = table.column("ocr_score").to_pylist() if has_ocr else [1.0] * len(texts)
+        titles = table.column("title").to_pylist() if has_title else ["Unknown"] * len(texts)
+        years = table.column("year").to_pylist() if has_year else [0] * len(texts)
+        sources = table.column("source").to_pylist() if has_source else ["unknown"] * len(texts)
+        rgs_scanned += 1
 
-        for i, text in enumerate(texts):
-            total_seen += 1
+        for text, ocr, title, year, source in zip(texts, ocr_scores, titles, years, sources):
             if not text or len(text) < min_chars:
-                filter_counts["too_short"] += 1
+                continue
+            if has_ocr and (ocr is None or ocr < min_ocr_score):
                 continue
 
-            ocr = ocr_scores[i] if ocr_scores else -1.0
-            leg = legibilities[i] if legibilities else -1.0
-            if ocr is not None and ocr != -1.0 and ocr < min_ocr_score:
-                filter_counts["ocr_score"] += 1
-                continue
-            if leg is not None and leg != -1.0 and leg < min_legibility:
-                filter_counts["legibility"] += 1
-                continue
-
-            word_count = len(text.split())
-            if word_count < min_words:
-                filter_counts["few_words"] += 1
-                continue
-
-            year = years[i] if years else 0
-            year = int(year) if year else 0
-            title = str(titles[i]) if titles and titles[i] else "Unknown"
-            source = str(sources[i]) if sources and sources[i] else "unknown"
-
+            source = str(source) if source else "unknown"
             is_newspaper = "newspaper" in source.lower() or "news" in source.lower()
             source_type = "newspaper" if is_newspaper else "book"
+            year = int(year) if year else 0
             decade = (year // 10) * 10 if year > 0 else 0
 
             excerpt = {
-                "text": text, "year": year, "title": title,
-                "source": source, "source_type": source_type,
+                "text": prepare_excerpt(text, rng),
+                "year": year,
+                "title": str(title) if title else "Unknown",
+                "source": source,
+                "source_type": source_type,
             }
 
             bucket = newspapers if is_newspaper else books
@@ -427,87 +521,10 @@ def _load_from_parquet(
 
         if total_passed >= target:
             break
-        if total_seen % 200000 == 0:
-            print(f"  Scanned {total_seen:,} rows, {total_passed:,} passed...")
+        if rgs_scanned % 100 == 0:
+            print(f"  Scanned {rgs_scanned} row groups, {total_passed} candidates...")
 
-    print(f"  Scanned {total_seen:,} rows, {total_passed:,} passed filters")
-    for reason, count in filter_counts.items():
-        if count > 0:
-            print(f"    Filtered ({reason}): {count:,}")
-
-    return _diversity_sample(books, newspapers, num_samples, rng)
-
-
-def _load_from_hf(
-    num_samples: int,
-    min_ocr_score: float,
-    min_legibility: float,
-    min_chars: int,
-    max_chars: int,
-    min_words: int,
-    rng: random.Random,
-) -> list[dict]:
-    """Load from HuggingFace streaming dataset."""
-    from datasets import load_dataset
-    print("Loading corpus from mhla/pre1900-corpus (streaming)...")
-    ds = load_dataset("mhla/pre1900-corpus", split="train", streaming=True)
-
-    books = {}
-    newspapers = {}
-    total_seen = 0
-    total_passed = 0
-    filter_counts = {
-        "ocr_score": 0, "legibility": 0, "too_short": 0, "few_words": 0,
-    }
-    target = int(num_samples * 1.2)
-
-    for row in ds:
-        total_seen += 1
-        text = row.get("text", "")
-        year = row.get("year", 0)
-        title = row.get("title", "Unknown")
-        source = row.get("source", "unknown")
-        ocr_score = row.get("ocr_score", -1.0)
-        legibility = row.get("legibility", -1.0)
-
-        is_newspaper = "newspaper" in source.lower() or "news" in source.lower()
-        source_type = "newspaper" if is_newspaper else "book"
-
-        if ocr_score != -1.0 and ocr_score < min_ocr_score:
-            filter_counts["ocr_score"] += 1
-            continue
-        if legibility != -1.0 and legibility < min_legibility:
-            filter_counts["legibility"] += 1
-            continue
-        if len(text) < min_chars:
-            filter_counts["too_short"] += 1
-            continue
-        word_count = len(text.split())
-        if word_count < min_words:
-            filter_counts["few_words"] += 1
-            continue
-
-        decade = (year // 10) * 10 if year > 0 else 0
-        excerpt = {
-            "text": text, "year": year, "title": title,
-            "source": source, "source_type": source_type,
-        }
-
-        bucket = newspapers if is_newspaper else books
-        if decade not in bucket:
-            bucket[decade] = []
-        bucket[decade].append(excerpt)
-        total_passed += 1
-
-        if total_passed % 50000 == 0:
-            print(f"  Scanned {total_seen:,} rows, {total_passed:,} passed filters...")
-        if total_passed >= target:
-            break
-
-    print(f"  Scanned {total_seen:,} rows, {total_passed:,} passed filters")
-    for reason, count in filter_counts.items():
-        if count > 0:
-            print(f"    Filtered ({reason}): {count:,}")
+    print(f"Collected {total_passed} candidates from {rgs_scanned} row groups")
 
     return _diversity_sample(books, newspapers, num_samples, rng)
 
@@ -656,15 +673,12 @@ async def process_sample(
     is_multi_turn: bool,
     semaphore: asyncio.Semaphore,
     sample_idx: int,
-    always_reject,
-    context_pats,
-    meta_reject,
     rng: random.Random,
 ) -> tuple[int, str, str, dict | None]:
     """Process a single excerpt. Returns (index, style, category, result_or_None)."""
 
-    # Prepare the excerpt text
-    text = prepare_excerpt(excerpt["text"], rng)
+    # Text already trimmed during loading
+    text = excerpt["text"]
     year = excerpt.get("year", 1850)
     title = excerpt.get("title", "Unknown")
     source_type = excerpt.get("source_type", "book")
@@ -672,13 +686,13 @@ async def process_sample(
     # Build the prompt
     prompt = _build_prompt(style, is_multi_turn, category, source_type, year, title)
 
-    max_retries = 8
+    max_retries = 10
     async with semaphore:
         for attempt in range(max_retries):
             try:
                 response = await client.messages.create(
                     model=model,
-                    max_tokens=4096,
+                    max_tokens=2048,
                     messages=[{"role": "user", "content": [
                         {"type": "text", "text": prompt,
                          "cache_control": {"type": "ephemeral"}},
@@ -694,20 +708,17 @@ async def process_sample(
                 if result.get("rejected"):
                     return sample_idx, style, category, result
 
-                # Inline quality filtering
-                combined = get_combined_text(result["messages"])
-                reason = check_conversation(combined, always_reject, context_pats, meta_reject)
-                if reason:
-                    return sample_idx, style, category, {
-                        "rejected": True, "reason": f"filter:{reason}"
-                    }
-
                 return sample_idx, style, category, result
-            except anthropic.RateLimitError:
-                wait = min(2 ** attempt * 5, 120)
-                if attempt >= 2:
-                    print(f"  Rate limited on sample {sample_idx}, retrying in {wait}s "
-                          f"(attempt {attempt+1}/{max_retries})")
+            except (anthropic.RateLimitError, ClientError) as e:
+                err_msg = str(e)
+                if "per day" in err_msg or "daily" in err_msg.lower():
+                    # All slots daily-limited — wait 60s then retry full round
+                    wait = 60
+                    if attempt == 0:
+                        print(f"  All slots daily-limited, retrying in {wait}s...")
+                else:
+                    # Per-minute rate limit — short backoff
+                    wait = min(2 ** attempt * 2, 30)
                 await asyncio.sleep(wait)
             except Exception as e:
                 print(f"  Error on sample {sample_idx}: {e}")
@@ -788,9 +799,8 @@ async def main_async(args):
         return
 
     # Initialize client and filters
-    client = BedrockFallbackClient()
+    client = BedrockClient()
     semaphore = asyncio.Semaphore(args.max_concurrent)
-    always_reject, context_pats, meta_reject = compile_patterns()
 
     # Output files
     period_path = os.path.join(args.output_dir, "period_pairs.jsonl")
@@ -814,7 +824,7 @@ async def main_async(args):
             tasks = [
                 process_sample(
                     client, exc, args.model, cat, sty, multi,
-                    semaphore, idx, always_reject, context_pats, meta_reject,
+                    semaphore, idx,
                     random.Random(args.seed + idx),
                 )
                 for idx, exc, cat, sty, multi in chunk
@@ -919,7 +929,7 @@ def main():
                         help="Output directory")
     parser.add_argument("--model", type=str, default="claude-sonnet-4-20250514",
                         help="Claude model to use")
-    parser.add_argument("--max-concurrent", type=int, default=200,
+    parser.add_argument("--max-concurrent", type=int, default=50,
                         help="Max concurrent API requests")
     parser.add_argument("--modern-ratio", type=float, default=0.5,
                         help="Fraction with modern-style user prompts")

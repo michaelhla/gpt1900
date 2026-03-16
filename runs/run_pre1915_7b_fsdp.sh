@@ -31,4 +31,5 @@ torchrun --standalone --nproc_per_node=8 -m scripts.base_train -- \
     --depth=46 --target-param-data-ratio=11.25 --device-batch-size=2 \
     --fsdp \
     --run=pre1915_7b_fsdp --save-every=2000 --window-pattern L \
+    --core-metric-every=-1 --sample-every=-1 \
     --total-batch-size=524288
