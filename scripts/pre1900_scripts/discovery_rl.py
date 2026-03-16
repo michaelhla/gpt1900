@@ -391,6 +391,8 @@ parser.add_argument("--ema-alpha", type=float, default=0.05, help="EMA smoothing
 parser.add_argument("--min-coherence-weight", type=float, default=0.1, help="Floor for coherence weight to prevent regression")
 parser.add_argument("--fixed-coherence-weight", type=float, default=None, help="If set, use fixed coherence/correctness weights instead of EMA curriculum (e.g. 0.1 means 0.1*coherence + 0.9*correctness)")
 parser.add_argument("--coherence-style", type=str, default="engagement", choices=["engagement", "logical"], help="Coherence judge style: 'engagement' (v6-v9) or 'logical' (v10+, emphasizes reasoning flow)")
+# v12: prompt suffix mode (no system prompt, append suffix to user prompt for physics eval)
+parser.add_argument("--prompt-suffix", type=str, default=None, help="If set, append this string to all user prompts (physics eval). For v12: 'Think deeply and step by step.'")
 # Output
 parser.add_argument("--output-dir", type=str, default="pre1900_discovery_rl_checkpoints", help="output checkpoints directory (relative to base dir)")
 args = parser.parse_args()
@@ -707,6 +709,8 @@ def run_physics_eval(tokenizer, engine, max_tokens=2048, temperature=0.7, top_k=
 
     for task in _physics_eval_tasks:
         prompt_text = "\n".join(task["prompt_lines"])
+        if args.prompt_suffix:
+            prompt_text = prompt_text.rstrip() + "\n\n" + args.prompt_suffix
         if args.no_scaffold:
             tokens = tokenizer.encode(prompt_text, prepend=bos_token)
         else:
