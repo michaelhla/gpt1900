@@ -625,7 +625,7 @@ def run_correctness_eval(task, gold_answers, tokenizer, engine, max_examples=Non
         ))
     else:
         scores = []
-    return scores
+    return scores, all_prompts, all_responses, all_golds
 
 
 # -----------------------------------------------------------------------------
@@ -734,7 +734,10 @@ def run_physics_eval(tokenizer, engine, max_tokens=2048, temperature=0.7, top_k=
         args.judge_model, args.max_concurrent_api,
     ))
 
-    return {tid: s for tid, s in zip(task_ids, scores)}
+    results = {}
+    for tid, s, (task, resp) in zip(task_ids, scores, prompts_and_responses):
+        results[tid] = {"score": s, "response": resp}
+    return results
 
 
 # Short names for wandb logging
@@ -799,7 +802,7 @@ for step in range(args.resume_step, num_steps):
     if step % args.eval_every == 0:
         model.eval()
         with autocast_ctx:
-            scores = run_correctness_eval(val_task, val_gold_answers, tokenizer, engine, max_examples=args.eval_examples, temperature=1.0)
+            scores, eval_prompts, eval_responses, eval_golds = run_correctness_eval(val_task, val_gold_answers, tokenizer, engine, max_examples=args.eval_examples, temperature=1.0)
         # Reduce across ranks
         score_sum = torch.tensor(sum(scores), dtype=torch.float, device=device)
         score_count = torch.tensor(len(scores), dtype=torch.long, device=device)
@@ -812,6 +815,17 @@ for step in range(args.resume_step, num_steps):
             "step": step,
             "eval/correctness_score": mean_correctness,
         })
+        # Save eval generations to disk
+        if ddp_rank == 0 and eval_prompts:
+            depth = model.config.n_layer
+            output_dirname = args.model_tag if args.model_tag else f"d{depth}"
+            gen_dir = os.path.join(base_dir, args.output_dir, output_dirname, "eval_generations")
+            os.makedirs(gen_dir, exist_ok=True)
+            gen_path = os.path.join(gen_dir, f"step_{step:06d}.jsonl")
+            with open(gen_path, "w") as gf:
+                for p, r, g, s in zip(eval_prompts, eval_responses, eval_golds, scores):
+                    gf.write(json.dumps({"prompt": p, "response": r, "gold": g, "score": s}, ensure_ascii=False) + "\n")
+            print0(f"Saved {len(eval_prompts)} eval generations to {gen_path}")
 
     # Physics eval (EVAL.json) — once per epoch (aligned with save_every)
     if _physics_eval_tasks and step % args.save_every == 0:
@@ -821,7 +835,8 @@ for step in range(args.resume_step, num_steps):
         if physics_scores:
             physics_log = {"step": step}
             all_scores = []
-            for tid, score in physics_scores.items():
+            for tid, result in physics_scores.items():
+                score = result["score"]
                 short = _TASK_SHORT_NAMES.get(tid, tid[:6])
                 physics_log[f"physics_eval/{short}"] = score
                 all_scores.append(score)
@@ -829,6 +844,16 @@ for step in range(args.resume_step, num_steps):
             physics_log["physics_eval/mean"] = sum(all_scores) / len(all_scores)
             print0(f"  Physics eval mean: {physics_log['physics_eval/mean']:.2f}/5")
             wandb_run.log(physics_log)
+            # Save physics eval generations
+            depth = model.config.n_layer
+            output_dirname = args.model_tag if args.model_tag else f"d{depth}"
+            gen_dir = os.path.join(base_dir, args.output_dir, output_dirname, "physics_eval_generations")
+            os.makedirs(gen_dir, exist_ok=True)
+            gen_path = os.path.join(gen_dir, f"step_{step:06d}.jsonl")
+            with open(gen_path, "w") as gf:
+                for tid, result in physics_scores.items():
+                    gf.write(json.dumps({"task_id": tid, "score": result["score"], "response": result["response"]}, ensure_ascii=False) + "\n")
+            print0(f"Saved physics eval generations to {gen_path}")
 
     # Forward/Backward on rollouts over multiple examples
     rewards_list = []
