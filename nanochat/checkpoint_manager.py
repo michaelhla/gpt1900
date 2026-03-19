@@ -127,8 +127,13 @@ def build_model(checkpoint_dir, step, device, phase):
         model.eval()
     else:
         model.train()
-    # Load the Tokenizer
-    tokenizer = get_tokenizer()
+    # Load the Tokenizer — prefer the one bundled with the checkpoint
+    local_tok_dir = os.path.join(checkpoint_dir, "tokenizer")
+    if os.path.isdir(local_tok_dir) and os.path.exists(os.path.join(local_tok_dir, "tokenizer.pkl")):
+        from nanochat.tokenizer import RustBPETokenizer
+        tokenizer = RustBPETokenizer.from_directory(local_tok_dir)
+    else:
+        tokenizer = get_tokenizer()
     # Sanity check: compatibility between model and tokenizer
     assert tokenizer.get_vocab_size() == model_config_kwargs["vocab_size"], f"Tokenizer vocab size {tokenizer.get_vocab_size()} does not match model config vocab size {model_config_kwargs['vocab_size']}"
     return model, tokenizer, meta_data

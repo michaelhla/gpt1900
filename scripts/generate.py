@@ -23,8 +23,9 @@ from nanochat.checkpoint_manager import load_model
 parser = argparse.ArgumentParser(description='Generate from a base model checkpoint')
 parser.add_argument('-s', '--step', type=int, default=None, help='Checkpoint step to load (default: latest)')
 parser.add_argument('-g', '--model-tag', type=str, default=None, help='Model tag, e.g. d26 (default: largest)')
+parser.add_argument('--model-dir', type=str, default=None, help='Load directly from this directory (bypasses -g)')
 parser.add_argument('-p', '--prompt', type=str, default=None, help='Single prompt, then exit. Omit for interactive mode.')
-parser.add_argument('-t', '--temperature', type=float, default=0.8, help='Sampling temperature (default: 0.8)')
+parser.add_argument('-t', '--temperature', type=float, default=1.0, help='Sampling temperature (default: 1.0)')
 parser.add_argument('-k', '--top-k', type=int, default=50, help='Top-k sampling (default: 50)')
 parser.add_argument('--max-tokens', type=int, default=512, help='Max tokens to generate (default: 512)')
 parser.add_argument('--device-type', type=str, default='', choices=['cuda', 'cpu', 'mps'], help='Device type (default: autodetect)')
@@ -38,7 +39,12 @@ ptdtype = torch.float32 if args.dtype == 'float32' else torch.bfloat16
 autocast_ctx = torch.amp.autocast(device_type=device_type, dtype=ptdtype) if device_type == "cuda" else nullcontext()
 
 # Load model
-model, tokenizer, meta = load_model("base", device, phase="eval", model_tag=args.model_tag, step=args.step)
+if args.model_dir:
+    from nanochat.checkpoint_manager import build_model, find_last_step
+    step = args.step if args.step is not None else find_last_step(args.model_dir)
+    model, tokenizer, meta = build_model(args.model_dir, step, device, phase="eval")
+else:
+    model, tokenizer, meta = load_model("base", device, phase="eval", model_tag=args.model_tag, step=args.step)
 engine = Engine(model, tokenizer)
 bos = tokenizer.get_bos_token_id()
 

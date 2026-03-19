@@ -106,6 +106,15 @@ UPLOAD_CONFIGS = {
         "detail": "3.29B parameter GPT-style language model trained on pre-1905 English text. Training complete (19,103 steps, 40B tokens).",
         "training_info": "Base pretraining on pre-1905 corpus, 19,103 steps, 40B tokens",
     },
+    "1964-base-d34": {
+        "repo_id": "mhla/gpt1964-d34",
+        "checkpoint_dir": "/opt/dlami/nvme/gpt1964_training/base_checkpoints/d34",
+        "tokenizer_dir": "/opt/dlami/nvme/gpt1964_training/tokenizer",
+        "step": 19103,
+        "desc": "GPT-1964 D34 Base (fully trained)",
+        "detail": "3.29B parameter GPT-style language model trained on 1900-1964 English text (institutional books 1900-1922, American Stories newspapers 1900-1964). Training complete (19,103 steps).",
+        "training_info": "Base pretraining on 1900-1964 corpus, 19,103 steps",
+    },
 }
 
 PARAMS = "3.29B"

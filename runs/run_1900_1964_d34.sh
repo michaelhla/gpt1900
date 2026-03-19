@@ -32,4 +32,4 @@ source .venv/bin/activate
 
 torchrun --standalone --nproc_per_node=8 -m scripts.base_train -- \
     --depth=34 --target-param-data-ratio=20 --device-batch-size=4 --fp8 \
-    --run=gpt1964_d34 --save-every=500 --resume-from-step=5000 --window-pattern L
+    --run=gpt1964_d34 --save-every=500 --resume-from-step=15500 --window-pattern L

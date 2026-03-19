@@ -96,7 +96,8 @@ parser.add_argument("--model-step", type=int, default=None, help="model step to 
 parser.add_argument("--resume-step", type=int, default=0, help="resume training from this step")
 parser.add_argument("--checkpoints-dir", type=str, default="r1_reasoning_sft_checkpoints", help="source checkpoints directory (relative to base dir)")
 # Training horizon
-parser.add_argument("--num-epochs", type=int, default=3, help="number of epochs over combined data")
+parser.add_argument("--num-epochs", type=int, default=2, help="number of epochs per curriculum phase")
+parser.add_argument("--examples-per-phase", type=int, default=200, help="number of examples per curriculum phase")
 # Batch sizes / sampling
 parser.add_argument("--device-batch-size", type=int, default=2, help="max batch size per forward pass")
 parser.add_argument("--examples-per-step", type=int, default=8, help="total examples per optimization step across all ranks")
@@ -148,16 +149,15 @@ model, tokenizer, meta = load_model_from_dir(checkpoints_dir, device, phase="eva
 engine = Engine(model, tokenizer)
 
 # -----------------------------------------------------------------------------
-# Load training data: GSM8K + MATH combined
+# Load training data: GSM8K + MATH with curriculum phases
 
 from datasets import load_dataset as hf_load_dataset
 
-# GSM8K train
+# GSM8K train (all levels are easy, always included)
 print0("Loading GSM8K train...")
 gsm8k_ds = hf_load_dataset("openai/gsm8k", "main", split="train").shuffle(seed=42)
 gsm8k_train_data = []
 for row in gsm8k_ds:
-    # Extract gold answer from #### marker
     gold = gsm8k_extract_answer(row["answer"])
     if gold is not None:
         gsm8k_train_data.append({
@@ -167,47 +167,73 @@ for row in gsm8k_ds:
         })
 print0(f"GSM8K train: {len(gsm8k_train_data)} examples")
 
-# MATH train
+# MATH train — load ALL levels, we'll filter per phase
 print0("Loading MATH train...")
-math_levels = args.math_levels.split(",") if args.math_levels else None
 math_types = args.math_types.split(",") if args.math_types else None
-math_task = MATH("train", levels=math_levels, types=math_types)
-math_train_data = []
-for i in range(math_task.num_examples()):
-    gold = math_task.get_gold_answer(i)
-    if gold is not None:
-        math_train_data.append({
-            "source": "math",
-            "question": math_task.get_question(i),
-            "gold_answer": gold,
-            "metadata": math_task.get_metadata(i),
-        })
-print0(f"MATH train: {len(math_train_data)} examples (filtered from {math_task.num_examples()})")
+math_task_all = MATH("train", levels=None, types=math_types)
+math_train_by_level = {}  # level -> list of items
+for i in range(math_task_all.num_examples()):
+    gold = math_task_all.get_gold_answer(i)
+    if gold is None:
+        continue
+    meta = math_task_all.get_metadata(i)
+    level = meta["level"]
+    if level not in math_train_by_level:
+        math_train_by_level[level] = []
+    math_train_by_level[level].append({
+        "source": "math",
+        "question": math_task_all.get_question(i),
+        "gold_answer": gold,
+        "metadata": meta,
+    })
+for level in sorted(math_train_by_level):
+    print0(f"  MATH {level}: {len(math_train_by_level[level])} examples")
 
-# Combine with ratio control
-def build_combined_dataset(gsm8k_data, math_data, gsm8k_ratio, seed=42):
-    """Combine GSM8K and MATH data with controlled ratio, shuffled."""
+# Curriculum phases: each phase adds harder MATH levels
+CURRICULUM_PHASES = [
+    {"name": "Phase 1: GSM8K + MATH L1-2", "math_levels": ["Level 1", "Level 2"]},
+    {"name": "Phase 2: GSM8K + MATH L1-3", "math_levels": ["Level 1", "Level 2", "Level 3"]},
+    {"name": "Phase 3: GSM8K + MATH L1-5", "math_levels": ["Level 1", "Level 2", "Level 3", "Level 4", "Level 5"]},
+]
+
+def build_phase_dataset(gsm8k_data, math_by_level, math_levels, gsm8k_ratio, max_examples, seed=42):
+    """Build a dataset for one curriculum phase: sample GSM8K + filtered MATH levels."""
     rng = random.Random(seed)
-    # Subsample to achieve the desired ratio
-    total = len(gsm8k_data) + len(math_data)
-    desired_gsm8k = int(total * gsm8k_ratio)
-    desired_math = total - desired_gsm8k
-    # Cap to available data
+    # Collect MATH examples for the allowed levels
+    math_data = []
+    for level in math_levels:
+        if level in math_by_level:
+            math_data.extend(math_by_level[level])
+    # Determine counts based on ratio and max_examples
+    desired_gsm8k = int(max_examples * gsm8k_ratio)
+    desired_math = max_examples - desired_gsm8k
     gsm8k_sample = rng.sample(gsm8k_data, min(desired_gsm8k, len(gsm8k_data)))
     math_sample = rng.sample(math_data, min(desired_math, len(math_data)))
     combined = gsm8k_sample + math_sample
     rng.shuffle(combined)
     return combined
 
-train_data = build_combined_dataset(gsm8k_train_data, math_train_data, args.gsm8k_ratio)
-actual_gsm8k_count = sum(1 for d in train_data if d["source"] == "gsm8k")
-actual_math_count = sum(1 for d in train_data if d["source"] == "math")
-print0(f"Combined train: {len(train_data)} examples (GSM8K: {actual_gsm8k_count}, MATH: {actual_math_count})")
+# Build all phase datasets
+phase_datasets = []
+for phase_idx, phase in enumerate(CURRICULUM_PHASES):
+    phase_data = build_phase_dataset(
+        gsm8k_train_data, math_train_by_level, phase["math_levels"],
+        args.gsm8k_ratio, args.examples_per_phase, seed=42 + phase_idx,
+    )
+    gsm_count = sum(1 for d in phase_data if d["source"] == "gsm8k")
+    math_count = sum(1 for d in phase_data if d["source"] == "math")
+    print0(f"{phase['name']}: {len(phase_data)} examples (GSM8K: {gsm_count}, MATH: {math_count})")
+    phase_datasets.append(phase_data)
 
-num_steps = (len(train_data) // args.examples_per_step) * args.num_epochs
-print0(f"Calculated number of steps: {num_steps}")
+# Total steps across all phases
+steps_per_phase = [(len(pd) // args.examples_per_step) * args.num_epochs for pd in phase_datasets]
+num_steps = sum(steps_per_phase)
+print0(f"Steps per phase: {steps_per_phase}, total: {num_steps}")
 
-# Load eval datasets
+# Current phase tracking (mutable, updated during training)
+train_data = phase_datasets[0]  # start with phase 0
+
+# Load eval datasets (always eval on full difficulty)
 print0("Loading eval datasets...")
 gsm8k_test_ds = hf_load_dataset("openai/gsm8k", "main", split="test").shuffle(seed=42)
 gsm8k_test_data = []
@@ -221,7 +247,7 @@ for row in gsm8k_test_ds:
         })
 print0(f"GSM8K test: {len(gsm8k_test_data)} examples")
 
-math_test_task = MATH("test", levels=math_levels, types=math_types)
+math_test_task = MATH("test", levels=None, types=math_types)
 math_test_data = []
 for i in range(math_test_task.num_examples()):
     gold = math_test_task.get_gold_answer(i)
@@ -544,182 +570,200 @@ assert args.examples_per_step % ddp_world_size == 0, "Desired examples per step 
 examples_per_rank = args.examples_per_step // ddp_world_size
 print0(f"Calculated examples per rank: {examples_per_rank}")
 
-# Kick off the training loop
-batch_iterator = get_batch()
-if args.resume_step > 0:
-    print0(f"Resuming training from step {args.resume_step}/{num_steps}")
-for step in range(args.resume_step, num_steps):
+# Kick off the training loop with curriculum phases
+global_step = 0
+for phase_idx, phase in enumerate(CURRICULUM_PHASES):
+    train_data = phase_datasets[phase_idx]
+    phase_steps = steps_per_phase[phase_idx]
+    print0(f"\n{'='*60}")
+    print0(f"Starting {phase['name']} ({phase_steps} steps, {len(train_data)} examples x {args.num_epochs} epochs)")
+    print0(f"{'='*60}")
+    batch_iterator = get_batch()
 
-    # Evaluate once in a while
-    if step % args.eval_every == 0:
-        model.eval()
+    for phase_step in range(phase_steps):
+        step = global_step  # use global step for logging/saving/LR
 
-        # GSM8K eval
-        with autocast_ctx:
-            gsm8k_scores, gsm8k_parse_fails, _ = run_math_eval(
-                gsm8k_test_data, tokenizer, engine,
-                max_examples=args.eval_gsm8k_examples, temperature=0.0,
-            )
-        gsm8k_score_sum = torch.tensor(sum(gsm8k_scores), dtype=torch.float, device=device)
-        gsm8k_count = torch.tensor(len(gsm8k_scores), dtype=torch.long, device=device)
-        gsm8k_pf = torch.tensor(gsm8k_parse_fails, dtype=torch.long, device=device)
-        if ddp:
-            dist.all_reduce(gsm8k_score_sum, op=dist.ReduceOp.SUM)
-            dist.all_reduce(gsm8k_count, op=dist.ReduceOp.SUM)
-            dist.all_reduce(gsm8k_pf, op=dist.ReduceOp.SUM)
-        gsm8k_acc = (gsm8k_score_sum / gsm8k_count.clamp(min=1)).item()
-        gsm8k_pf_rate = (gsm8k_pf.float() / gsm8k_count.clamp(min=1)).item()
-        print0(f"Step {step} | GSM8K eval acc: {gsm8k_acc:.4f} | parse fail: {gsm8k_pf_rate:.2%}")
+        # Skip steps if resuming
+        if step < args.resume_step:
+            next(batch_iterator)  # advance iterator without training
+            global_step += 1
+            continue
 
-        # MATH eval
-        with autocast_ctx:
-            math_scores, math_parse_fails, per_level = run_math_eval(
-                math_test_data, tokenizer, engine,
-                max_examples=args.eval_math_examples, temperature=0.0,
-            )
-        math_score_sum = torch.tensor(sum(math_scores), dtype=torch.float, device=device)
-        math_count = torch.tensor(len(math_scores), dtype=torch.long, device=device)
-        math_pf = torch.tensor(math_parse_fails, dtype=torch.long, device=device)
-        if ddp:
-            dist.all_reduce(math_score_sum, op=dist.ReduceOp.SUM)
-            dist.all_reduce(math_count, op=dist.ReduceOp.SUM)
-            dist.all_reduce(math_pf, op=dist.ReduceOp.SUM)
-        math_acc = (math_score_sum / math_count.clamp(min=1)).item()
-        math_pf_rate = (math_pf.float() / math_count.clamp(min=1)).item()
-        print0(f"Step {step} | MATH eval acc: {math_acc:.4f} | parse fail: {math_pf_rate:.2%}")
+        # Evaluate once in a while
+        if step % args.eval_every == 0:
+            model.eval()
 
-        eval_log = {
-            "step": step,
-            "eval/gsm8k_acc": gsm8k_acc,
-            "eval/gsm8k_parse_fail_rate": gsm8k_pf_rate,
-            "eval/math_acc": math_acc,
-            "eval/math_parse_fail_rate": math_pf_rate,
-        }
-
-        # Per-level MATH accuracy (local rank only, approximate)
-        for level, level_scores in per_level.items():
-            if level_scores:
-                level_acc = sum(level_scores) / len(level_scores)
-                level_key = level.replace(" ", "_").lower()
-                eval_log[f"eval/math_{level_key}_acc"] = level_acc
-                print0(f"  MATH {level}: {level_acc:.4f} ({len(level_scores)} examples)")
-
-        wandb_run.log(eval_log)
-
-    # Physics eval (EVAL.json) — aligned with save_every
-    if _physics_eval_tasks and step % args.save_every == 0:
-        model.eval()
-        with autocast_ctx:
-            physics_scores = run_physics_eval(tokenizer, engine, max_tokens=args.max_new_tokens)
-        if physics_scores:
-            physics_log = {"step": step}
-            all_scores = []
-            for tid, score in physics_scores.items():
-                short = _TASK_SHORT_NAMES.get(tid, tid[:6])
-                physics_log[f"physics_eval/{short}"] = score
-                all_scores.append(score)
-                print0(f"  Physics eval {short}: {score:.1f}/5")
-            physics_log["physics_eval/mean"] = sum(all_scores) / len(all_scores)
-            print0(f"  Physics eval mean: {physics_log['physics_eval/mean']:.2f}/5")
-            wandb_run.log(physics_log)
-
-    # Forward/Backward on rollouts over multiple examples
-    rewards_list = []
-    sequence_lengths = []
-    agg_stats = {"gsm8k_correct_frac": 0.0, "math_correct_frac": 0.0, "format_frac": 0.0, "parse_fail_frac": 0.0}
-    gsm8k_example_count = 0
-    math_example_count = 0
-    for example_step in range(examples_per_rank):
-        sequences_all, inputs_all, targets_all, rewards_all, advantages_all, batch_stats = next(batch_iterator)
-        model.train()
-
-        # Accumulate per-source stats
-        if batch_stats["source"] == "gsm8k":
-            agg_stats["gsm8k_correct_frac"] += batch_stats["correct_frac"]
-            gsm8k_example_count += 1
-        else:
-            agg_stats["math_correct_frac"] += batch_stats["correct_frac"]
-            math_example_count += 1
-        agg_stats["format_frac"] += batch_stats["format_frac"]
-        agg_stats["parse_fail_frac"] += batch_stats["parse_fail_frac"]
-
-        assert inputs_all.size(0) % args.device_batch_size == 0
-        num_passes = inputs_all.size(0) // args.device_batch_size
-        for pass_idx in range(num_passes):
-            b0, b1 = pass_idx * args.device_batch_size, (pass_idx + 1) * args.device_batch_size
-            inputs = inputs_all[b0:b1]
-            targets = targets_all[b0:b1]
-            rewards = rewards_all[b0:b1]
-            advantages = advantages_all[b0:b1]
+            # GSM8K eval
             with autocast_ctx:
-                logp = -model(inputs, targets, loss_reduction='none').view_as(inputs)
-            # PG objective with DAPO token-level normalization
-            pg_obj = (logp * advantages.unsqueeze(-1)).sum()
-            num_valid = (targets >= 0).sum().clamp(min=1)
-            pg_obj = pg_obj / (num_valid * num_passes * examples_per_rank)
-            loss = -pg_obj
-            loss.backward()
-            print0(f"Step {step}/{num_steps} | Example step {example_step} | Pass {pass_idx} | loss: {loss.item():.6f} | reward: {rewards.mean().item():.3f}")
-        rewards_list.append(rewards_all.mean().item())
-        sequence_lengths.extend(len(seq) for seq in sequences_all)
+                gsm8k_scores, gsm8k_parse_fails, _ = run_math_eval(
+                    gsm8k_test_data, tokenizer, engine,
+                    max_examples=args.eval_gsm8k_examples, temperature=0.0,
+                )
+            gsm8k_score_sum = torch.tensor(sum(gsm8k_scores), dtype=torch.float, device=device)
+            gsm8k_count = torch.tensor(len(gsm8k_scores), dtype=torch.long, device=device)
+            gsm8k_pf = torch.tensor(gsm8k_parse_fails, dtype=torch.long, device=device)
+            if ddp:
+                dist.all_reduce(gsm8k_score_sum, op=dist.ReduceOp.SUM)
+                dist.all_reduce(gsm8k_count, op=dist.ReduceOp.SUM)
+                dist.all_reduce(gsm8k_pf, op=dist.ReduceOp.SUM)
+            gsm8k_acc = (gsm8k_score_sum / gsm8k_count.clamp(min=1)).item()
+            gsm8k_pf_rate = (gsm8k_pf.float() / gsm8k_count.clamp(min=1)).item()
+            print0(f"Step {step} | GSM8K eval acc: {gsm8k_acc:.4f} | parse fail: {gsm8k_pf_rate:.2%}")
 
-    # Average aggregate stats
-    agg_stats["format_frac"] /= examples_per_rank
-    agg_stats["parse_fail_frac"] /= examples_per_rank
-    if gsm8k_example_count > 0:
-        agg_stats["gsm8k_correct_frac"] /= gsm8k_example_count
-    if math_example_count > 0:
-        agg_stats["math_correct_frac"] /= math_example_count
+            # MATH eval
+            with autocast_ctx:
+                math_scores, math_parse_fails, per_level = run_math_eval(
+                    math_test_data, tokenizer, engine,
+                    max_examples=args.eval_math_examples, temperature=0.0,
+                )
+            math_score_sum = torch.tensor(sum(math_scores), dtype=torch.float, device=device)
+            math_count = torch.tensor(len(math_scores), dtype=torch.long, device=device)
+            math_pf = torch.tensor(math_parse_fails, dtype=torch.long, device=device)
+            if ddp:
+                dist.all_reduce(math_score_sum, op=dist.ReduceOp.SUM)
+                dist.all_reduce(math_count, op=dist.ReduceOp.SUM)
+                dist.all_reduce(math_pf, op=dist.ReduceOp.SUM)
+            math_acc = (math_score_sum / math_count.clamp(min=1)).item()
+            math_pf_rate = (math_pf.float() / math_count.clamp(min=1)).item()
+            print0(f"Step {step} | MATH eval acc: {math_acc:.4f} | parse fail: {math_pf_rate:.2%}")
 
-    # Logging
-    mean_reward = sum(rewards_list) / len(rewards_list)
-    mean_sequence_length = sum(sequence_lengths) / len(sequence_lengths)
-    if ddp:
-        mean_reward_tensor = torch.tensor(mean_reward, dtype=torch.float, device=device)
-        mean_sequence_length_tensor = torch.tensor(mean_sequence_length, dtype=torch.float, device=device)
-        dist.all_reduce(mean_reward_tensor, op=dist.ReduceOp.AVG)
-        dist.all_reduce(mean_sequence_length_tensor, op=dist.ReduceOp.AVG)
-        mean_reward = mean_reward_tensor.item()
-        mean_sequence_length = mean_sequence_length_tensor.item()
-    print0(f"Step {step}/{num_steps} | reward: {mean_reward:.3f} | seq_len: {mean_sequence_length:.0f} | gsm8k_correct: {agg_stats['gsm8k_correct_frac']:.2%} | math_correct: {agg_stats['math_correct_frac']:.2%} | format: {agg_stats['format_frac']:.2%}")
-    wandb_run.log({
-        "step": step,
-        "reward": mean_reward,
-        "sequence_length": mean_sequence_length,
-        "reward/gsm8k_correct_frac": agg_stats["gsm8k_correct_frac"],
-        "reward/math_correct_frac": agg_stats["math_correct_frac"],
-        "reward/format_frac": agg_stats["format_frac"],
-        "reward/parse_fail_frac": agg_stats["parse_fail_frac"],
-    })
+            eval_log = {
+                "step": step,
+                "eval/gsm8k_acc": gsm8k_acc,
+                "eval/gsm8k_parse_fail_rate": gsm8k_pf_rate,
+                "eval/math_acc": math_acc,
+                "eval/math_parse_fail_rate": math_pf_rate,
+            }
 
-    # Update model parameters
-    lrm = get_lr_multiplier(step)
-    for group in optimizer.param_groups:
-        group["lr"] = group["initial_lr"] * lrm
-    optimizer.step()
-    model.zero_grad(set_to_none=True)
-    wandb_run.log({
-        "step": step,
-        "lrm": lrm,
-    })
+            # Per-level MATH accuracy (local rank only, approximate)
+            for level, level_scores in per_level.items():
+                if level_scores:
+                    level_acc = sum(level_scores) / len(level_scores)
+                    level_key = level.replace(" ", "_").lower()
+                    eval_log[f"eval/math_{level_key}_acc"] = level_acc
+                    print0(f"  MATH {level}: {level_acc:.4f} ({len(level_scores)} examples)")
 
-    # Save checkpoints (model + optimizer state per rank)
-    if (step > 0 and step % args.save_every == 0) or step == num_steps - 1:
-        depth = model.config.n_layer
-        output_dirname = args.model_tag if args.model_tag else f"d{depth}"
-        checkpoint_dir = os.path.join(base_dir, args.output_dir, output_dirname)
-        model_config_kwargs = model.config.__dict__
-        save_checkpoint(
-            checkpoint_dir,
-            step,
-            model.state_dict(),
-            optimizer.state_dict(),
-            {
-                "model_config": model_config_kwargs,
-            },
-            rank=ddp_rank,
-        )
-        print0(f"Saved model + optimizer checkpoint to {checkpoint_dir}")
+            wandb_run.log(eval_log)
+
+        # Physics eval (EVAL.json) — aligned with save_every
+        if _physics_eval_tasks and step % args.save_every == 0:
+            model.eval()
+            with autocast_ctx:
+                physics_scores = run_physics_eval(tokenizer, engine, max_tokens=args.max_new_tokens)
+            if physics_scores:
+                physics_log = {"step": step}
+                all_scores = []
+                for tid, score in physics_scores.items():
+                    short = _TASK_SHORT_NAMES.get(tid, tid[:6])
+                    physics_log[f"physics_eval/{short}"] = score
+                    all_scores.append(score)
+                    print0(f"  Physics eval {short}: {score:.1f}/5")
+                physics_log["physics_eval/mean"] = sum(all_scores) / len(all_scores)
+                print0(f"  Physics eval mean: {physics_log['physics_eval/mean']:.2f}/5")
+                wandb_run.log(physics_log)
+
+        # Forward/Backward on rollouts over multiple examples
+        rewards_list = []
+        sequence_lengths = []
+        agg_stats = {"gsm8k_correct_frac": 0.0, "math_correct_frac": 0.0, "format_frac": 0.0, "parse_fail_frac": 0.0}
+        gsm8k_example_count = 0
+        math_example_count = 0
+        for example_step in range(examples_per_rank):
+            sequences_all, inputs_all, targets_all, rewards_all, advantages_all, batch_stats = next(batch_iterator)
+            model.train()
+
+            # Accumulate per-source stats
+            if batch_stats["source"] == "gsm8k":
+                agg_stats["gsm8k_correct_frac"] += batch_stats["correct_frac"]
+                gsm8k_example_count += 1
+            else:
+                agg_stats["math_correct_frac"] += batch_stats["correct_frac"]
+                math_example_count += 1
+            agg_stats["format_frac"] += batch_stats["format_frac"]
+            agg_stats["parse_fail_frac"] += batch_stats["parse_fail_frac"]
+
+            assert inputs_all.size(0) % args.device_batch_size == 0
+            num_passes = inputs_all.size(0) // args.device_batch_size
+            for pass_idx in range(num_passes):
+                b0, b1 = pass_idx * args.device_batch_size, (pass_idx + 1) * args.device_batch_size
+                inputs = inputs_all[b0:b1]
+                targets = targets_all[b0:b1]
+                rewards = rewards_all[b0:b1]
+                advantages = advantages_all[b0:b1]
+                with autocast_ctx:
+                    logp = -model(inputs, targets, loss_reduction='none').view_as(inputs)
+                # PG objective with DAPO token-level normalization
+                pg_obj = (logp * advantages.unsqueeze(-1)).sum()
+                num_valid = (targets >= 0).sum().clamp(min=1)
+                pg_obj = pg_obj / (num_valid * num_passes * examples_per_rank)
+                loss = -pg_obj
+                loss.backward()
+                print0(f"Step {step}/{num_steps} | Example step {example_step} | Pass {pass_idx} | loss: {loss.item():.6f} | reward: {rewards.mean().item():.3f}")
+            rewards_list.append(rewards_all.mean().item())
+            sequence_lengths.extend(len(seq) for seq in sequences_all)
+
+        # Average aggregate stats
+        agg_stats["format_frac"] /= examples_per_rank
+        agg_stats["parse_fail_frac"] /= examples_per_rank
+        if gsm8k_example_count > 0:
+            agg_stats["gsm8k_correct_frac"] /= gsm8k_example_count
+        if math_example_count > 0:
+            agg_stats["math_correct_frac"] /= math_example_count
+
+        # Logging
+        mean_reward = sum(rewards_list) / len(rewards_list)
+        mean_sequence_length = sum(sequence_lengths) / len(sequence_lengths)
+        if ddp:
+            mean_reward_tensor = torch.tensor(mean_reward, dtype=torch.float, device=device)
+            mean_sequence_length_tensor = torch.tensor(mean_sequence_length, dtype=torch.float, device=device)
+            dist.all_reduce(mean_reward_tensor, op=dist.ReduceOp.AVG)
+            dist.all_reduce(mean_sequence_length_tensor, op=dist.ReduceOp.AVG)
+            mean_reward = mean_reward_tensor.item()
+            mean_sequence_length = mean_sequence_length_tensor.item()
+        print0(f"Step {step}/{num_steps} | reward: {mean_reward:.3f} | seq_len: {mean_sequence_length:.0f} | gsm8k_correct: {agg_stats['gsm8k_correct_frac']:.2%} | math_correct: {agg_stats['math_correct_frac']:.2%} | format: {agg_stats['format_frac']:.2%}")
+        wandb_run.log({
+            "step": step,
+            "phase": phase_idx,
+            "reward": mean_reward,
+            "sequence_length": mean_sequence_length,
+            "reward/gsm8k_correct_frac": agg_stats["gsm8k_correct_frac"],
+            "reward/math_correct_frac": agg_stats["math_correct_frac"],
+            "reward/format_frac": agg_stats["format_frac"],
+            "reward/parse_fail_frac": agg_stats["parse_fail_frac"],
+        })
+
+        # Update model parameters
+        lrm = get_lr_multiplier(step)
+        for group in optimizer.param_groups:
+            group["lr"] = group["initial_lr"] * lrm
+        optimizer.step()
+        model.zero_grad(set_to_none=True)
+        wandb_run.log({
+            "step": step,
+            "lrm": lrm,
+        })
+
+        # Save checkpoints (model + optimizer state per rank)
+        if (step > 0 and step % args.save_every == 0) or step == num_steps - 1:
+            depth = model.config.n_layer
+            output_dirname = args.model_tag if args.model_tag else f"d{depth}"
+            checkpoint_dir = os.path.join(base_dir, args.output_dir, output_dirname)
+            model_config_kwargs = model.config.__dict__
+            save_checkpoint(
+                checkpoint_dir,
+                step,
+                model.state_dict(),
+                optimizer.state_dict(),
+                {
+                    "model_config": model_config_kwargs,
+                },
+                rank=ddp_rank,
+            )
+            print0(f"Saved model + optimizer checkpoint to {checkpoint_dir}")
+
+        global_step += 1
+
+    print0(f"Completed {phase['name']} at global step {global_step}")
 
 # Log to report
 from nanochat.report import get_report

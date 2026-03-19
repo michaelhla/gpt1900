@@ -8,7 +8,9 @@ echo ""
 echo "Chain: base d34 -> physics CLM -> v3 SFT safe -> R1 reasoning SFT -> Math RL"
 echo ""
 echo "Key details:"
-echo "  - Combined GSM8K (30%) + MATH (70%) training data"
+echo "  - Curriculum: Phase 1 (L1-2) -> Phase 2 (L1-3) -> Phase 3 (L1-5)"
+echo "  - 200 examples per phase, 2 epochs each"
+echo "  - GSM8K (30%) + MATH (70%) per phase"
 echo "  - No system prompt, user prompt ends with 'Think deeply and step by step.'"
 echo "  - Format reward (0.3): <think> + \\answer{} tags"
 echo "  - Correctness reward (1.0): numeric (GSM8K) or SymPy (MATH)"
@@ -27,12 +29,11 @@ fi
 echo "Step 0: R1 reasoning SFT checkpoint found, proceeding..."
 
 # ---------------------------------------------------------------------------
-# Step 1: Math RL
+# Step 1: Math RL with curriculum
 # ---------------------------------------------------------------------------
 echo ""
 echo "=== [$(date)] Step 1: Math RL ==="
 echo "  Source: r1_reasoning_sft_checkpoints/d34"
-echo "  Data: GSM8K train (7,473) + MATH train (7,500)"
 echo "  Output: math_rl_checkpoints/d34"
 
 torchrun --standalone --nproc_per_node=8 -m scripts.math_rl -- \
@@ -40,11 +41,12 @@ torchrun --standalone --nproc_per_node=8 -m scripts.math_rl -- \
     --checkpoints-dir r1_reasoning_sft_checkpoints \
     --output-dir math_rl_checkpoints \
     --gsm8k-ratio 0.3 \
+    --examples-per-phase 200 --num-epochs 2 \
     --device-batch-size 2 --num-samples 4 --examples-per-step 8 \
-    --max-new-tokens 2048 --num-epochs 3 \
-    --eval-every 30 --save-every 60 \
+    --max-new-tokens 2048 \
+    --eval-every 15 --save-every 30 \
     --eval-gsm8k-examples 50 --eval-math-examples 50 \
-    --run=math_rl_d34
+    --run=math_rl_curriculum_d34
 
 echo ""
 echo "=== [$(date)] Math RL pipeline complete ==="

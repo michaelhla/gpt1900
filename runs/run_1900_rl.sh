@@ -1,6 +1,7 @@
 #!/bin/bash
-# 1905 RL pipeline: 1905 d34 → Physics CLM → v3 SFT → Contradiction RL
-# Chain: base d34 (mhla/gpt1905-d34) -> physics CLM (275M clean + 4 post-1900 texts)
+# 1900 RL pipeline: pre-1900 d34 → Physics CLM → v3 SFT → Contradiction RL
+# Chain: base d34_pre1900 (mhla/gpt1900-d34-22btok, step 10507)
+#        -> physics CLM (275M clean pre-1900 corpus, 14400 steps)
 #        -> v3 SFT (safe corpus) -> contradiction RL (v11-style)
 
 set -euo pipefail
@@ -14,13 +15,12 @@ export HF_TOKEN=${HF_TOKEN:?"Set HF_TOKEN env var"}
 export WANDB_API_KEY=${WANDB_API_KEY:?"Set WANDB_API_KEY env var"}
 export ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:?"Set ANTHROPIC_API_KEY env var"}
 
-echo "=== [$(date)] Starting 1905 RL pipeline (d34 → physics CLM → v3 SFT → contradiction RL) ==="
+echo "=== [$(date)] Starting 1900 RL pipeline (pre1900 d34 → physics CLM → v3 SFT → contradiction RL) ==="
 
-# Step 0: Data at physics_clm_data_1905_expanded/ (275M clean corpus + 4 post-1900 texts)
-# Built by filtering physics_clm_data/ through contains_post_1900_physics() and adding post-1900 texts
-DATA_DIR=${NANOCHAT_BASE_DIR}/physics_clm_data_1905_expanded
+# Data: 275M clean pre-1900 physics corpus (no post-1900 texts)
+DATA_DIR=${NANOCHAT_BASE_DIR}/physics_clm_data_pre1900_clean
 if [ ! -f "${DATA_DIR}/train.parquet" ]; then
-    echo "ERROR: ${DATA_DIR}/train.parquet not found. Build it first."
+    echo "ERROR: ${DATA_DIR}/train.parquet not found."
     exit 1
 fi
 
@@ -33,16 +33,17 @@ for split in ['train', 'val']:
     print(f'  {split}: {t.num_rows:,} docs, ~{chars/4.2/1e6:.1f}M tokens')
 "
 
-# Step 1: Physics CLM (continued pretraining, 14400 steps to match expanded run)
-# Saves to: physics_clm_checkpoints/d34/
-PHYSICS_CLM_CKPT_DIR=${NANOCHAT_BASE_DIR}/physics_clm_checkpoints/d34
+# Step 1: Physics CLM (continued pretraining, 14400 steps)
+# Loads from: base_checkpoints/d34_pre1900 (gpt1900-d34-22btok, step 10507)
+# Saves to: physics_clm_checkpoints/d34_pre1900/
+PHYSICS_CLM_CKPT_DIR=${NANOCHAT_BASE_DIR}/physics_clm_checkpoints/d34_pre1900
 if [ ! -d "$PHYSICS_CLM_CKPT_DIR" ] || [ -z "$(ls $PHYSICS_CLM_CKPT_DIR/model_*.pt 2>/dev/null)" ]; then
-    echo "Step 1: Running physics CLM (14400 steps)..."
+    echo "Step 1: Running physics CLM (14400 steps) from pre-1900 base..."
     torchrun --standalone --nproc_per_node=8 \
         -m scripts.physics_clm -- \
         --data-dir ${DATA_DIR} \
-        --model-tag d34 \
-        --output-tag d34 \
+        --model-tag d34_pre1900 \
+        --output-tag d34_pre1900 \
         --num-iterations 14400 \
         --device-batch-size 4 \
         --total-batch-size 65536 \
@@ -52,40 +53,40 @@ if [ ! -d "$PHYSICS_CLM_CKPT_DIR" ] || [ -z "$(ls $PHYSICS_CLM_CKPT_DIR/model_*.
         --eval-every 50 \
         --save-every 4800 \
         --physics-eval \
-        --run physics_clm_d34_1905_rl
+        --run physics_clm_d34_pre1900
 else
     echo "Step 1: Physics CLM checkpoint already exists, skipping..."
 fi
 
 # Step 2: v3 SFT (instruction tuning on safe corpus)
-# Loads from: physics_clm_checkpoints/d34/
-# Saves to: v3_sft_physics_1905_rl_checkpoints/d34/
-V3_SFT_CKPT_DIR=${NANOCHAT_BASE_DIR}/v3_sft_physics_1905_rl_checkpoints/d34
+# Loads from: physics_clm_checkpoints/d34_pre1900/
+# Saves to: v3_sft_physics_1900_rl_checkpoints/d34_pre1900/
+V3_SFT_CKPT_DIR=${NANOCHAT_BASE_DIR}/v3_sft_physics_1900_rl_checkpoints/d34_pre1900
 if [ ! -d "$V3_SFT_CKPT_DIR" ] || [ -z "$(ls $V3_SFT_CKPT_DIR/model_*.pt 2>/dev/null)" ]; then
     echo "Step 2: Running v3 SFT on physics CLM base..."
     torchrun --standalone --nproc_per_node=8 -m scripts.pre1900_sft -- \
-        --model-tag d34 \
+        --model-tag d34_pre1900 \
         --checkpoints-dir physics_clm_checkpoints \
-        --output-dir ${NANOCHAT_BASE_DIR}/v3_sft_physics_1905_rl_checkpoints \
+        --output-dir ${NANOCHAT_BASE_DIR}/v3_sft_physics_1900_rl_checkpoints \
         --device-batch-size=4 \
         --total-batch-size=524288 \
         --max-seq-len=2048 \
         --train-data ${NANOCHAT_BASE_DIR}/instruct_data/v3_corpus_safe/all_train.jsonl \
         --val-data ${NANOCHAT_BASE_DIR}/instruct_data/v3_corpus_safe/all_val.jsonl \
         --eval-every=150 \
-        --run=v3_sft_physics_1905_rl_d34
+        --run=v3_sft_physics_1900_rl_d34
 else
     echo "Step 2: v3 SFT checkpoint already exists, skipping..."
 fi
 
 # Step 3: Contradiction RL (v11-style: logical coherence + contradiction judging)
-# Loads from: v3_sft_physics_1905_rl_checkpoints/d34/
-# Saves to: pre1900_discovery_rl_1905_checkpoints/d34/
+# Loads from: v3_sft_physics_1900_rl_checkpoints/d34_pre1900/
+# Saves to: pre1900_discovery_rl_1900_checkpoints/d34_pre1900/
 echo "Step 3: Running contradiction RL..."
 torchrun --standalone --nproc_per_node=8 -m scripts.pre1900_scripts.discovery_rl -- \
-    --model-tag d34 \
-    --checkpoints-dir v3_sft_physics_1905_rl_checkpoints \
-    --output-dir ${NANOCHAT_BASE_DIR}/pre1900_discovery_rl_1905_checkpoints \
+    --model-tag d34_pre1900 \
+    --checkpoints-dir v3_sft_physics_1900_rl_checkpoints \
+    --output-dir ${NANOCHAT_BASE_DIR}/pre1900_discovery_rl_1900_checkpoints \
     --coherence-reward \
     --coherence-style logical \
     --fixed-coherence-weight 0.25 \
@@ -100,7 +101,7 @@ torchrun --standalone --nproc_per_node=8 -m scripts.pre1900_scripts.discovery_rl
     --problems-data instruct_data/contradiction_problems/contradiction_problems_train.jsonl \
     --problems-val-data instruct_data/contradiction_problems/contradiction_problems_val.jsonl \
     --eval-every 15 --save-every 35 \
-    --run=pre1900_discovery_rl_1905_d34
+    --run=pre1900_discovery_rl_1900_d34
 
-echo "=== [$(date)] 1905 RL pipeline complete ==="
-echo "Evaluate with: python -m scripts.physics_eval --checkpoints-dir pre1900_discovery_rl_1905_checkpoints --model-tag d34"
+echo "=== [$(date)] 1900 RL pipeline complete ==="
+echo "Evaluate with: python -m scripts.physics_eval --checkpoints-dir pre1900_discovery_rl_1900_checkpoints --model-tag d34_pre1900"
