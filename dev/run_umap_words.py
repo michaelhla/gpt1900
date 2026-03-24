@@ -54,9 +54,9 @@ hook = list(model.transformer.h)[-1].register_forward_hook(hook_fn)
 
 @torch.no_grad()
 def get_word_embedding(word):
-    """Get final-layer last-token hidden state for a word."""
+    """Get final-layer last-token hidden state for a word (lowercased)."""
     bos = tokenizer.get_bos_token_id()
-    tokens = tokenizer.encode(f" {word}", prepend=bos)
+    tokens = tokenizer.encode(f" {word.lower()}", prepend=bos)
     ids = torch.tensor([tokens], dtype=torch.long, device=device)
     _ = model(ids)
     return final_hidden['h'][0, -1, :].float().cpu().numpy()
@@ -214,18 +214,71 @@ for cat, words in WORDS.items():
 total = sum(len(v) for v in WORDS.values())
 print(f"  Total: {total} words")
 
-# ---- Collect embeddings ----
+# ---- Collect a large set of random single-token words from the vocabulary ----
 print("\n=== Collecting word embeddings ===")
+
+# First, collect all labeled words (single-token only)
 all_words, all_categories = [], []
 all_vecs = []
+labeled_token_ids = set()
 
 for cat, words in WORDS.items():
+    cat_count = 0
     for w in words:
+        toks = tokenizer.encode(f" {w.lower()}")
+        if len(toks) != 1:
+            continue
         vec = get_word_embedding(w)
-        all_words.append(w)
+        all_words.append(w.lower())
         all_categories.append(cat)
         all_vecs.append(vec)
-    print(f"  {cat}: done ({len(words)} words)")
+        labeled_token_ids.add(toks[0])
+        cat_count += 1
+    print(f"  {cat}: {cat_count} labeled words")
+
+print(f"  Total labeled: {len(all_words)}")
+
+# Now sample ~2000 random tokens from the vocabulary and embed them
+# Filter to tokens that decode to clean single English-looking words
+import random
+random.seed(42)
+vocab_size = tokenizer.get_vocab_size()
+random_count = 0
+TARGET_RANDOM = 2000
+
+candidate_ids = list(range(vocab_size))
+random.shuffle(candidate_ids)
+
+for tid in candidate_ids:
+    if random_count >= TARGET_RANDOM:
+        break
+    if tid in labeled_token_ids:
+        continue
+    decoded = tokenizer.decode([tid])
+    # Filter: must start with space, be 3+ chars after space, only ascii letters
+    if not decoded.startswith(' '):
+        continue
+    word = decoded[1:]  # strip leading space
+    if len(word) < 3 or not word.isalpha() or not word.isascii():
+        continue
+    # Skip very common function words
+    if word.lower() in {'the', 'and', 'for', 'that', 'this', 'with', 'from', 'are', 'was',
+                         'were', 'been', 'have', 'has', 'had', 'not', 'but', 'they', 'she',
+                         'his', 'her', 'its', 'our', 'you', 'who', 'which', 'will', 'would',
+                         'could', 'should', 'may', 'might', 'can', 'shall', 'did', 'does'}:
+        continue
+    bos = tokenizer.get_bos_token_id()
+    ids = torch.tensor([[bos, tid]], dtype=torch.long, device=device)
+    with torch.no_grad():
+        _ = model(ids)
+    vec = final_hidden['h'][0, -1, :].float().cpu().numpy()
+    all_words.append(word.lower())
+    all_categories.append("Random")
+    all_vecs.append(vec)
+    random_count += 1
+
+print(f"  Random vocab words: {random_count}")
+print(f"  Grand total: {len(all_words)}")
 
 X = np.stack(all_vecs)
 print(f"Embedding matrix: {X.shape}")
@@ -246,18 +299,25 @@ print(f"PCA explained variance: {pca.explained_variance_ratio_[0]:.3f}, {pca.exp
 
 # ---- Colors ----
 cat_colors = {
+    "Random": "#cccccc",
     "Sciences": "#e74c3c",
     "Humanities": "#3498db",
     "Daily Life & Technology": "#2ecc71",
     "Geography & Culture": "#f39c12",
 }
 
+# ---- Plot helper: draw Random first (background), then labeled on top ----
+draw_order = ["Random", "Sciences", "Humanities", "Daily Life & Technology", "Geography & Culture"]
+
 # ---- Plot 1: UMAP (large, clean) ----
 fig, ax = plt.subplots(figsize=(16, 12))
-for cat in cat_colors:
+for cat in draw_order:
     idxs = [i for i, c in enumerate(all_categories) if c == cat]
+    if not idxs: continue
+    s = 8 if cat == "Random" else 25
+    a = 0.3 if cat == "Random" else 0.8
     ax.scatter(umap_2d[idxs, 0], umap_2d[idxs, 1],
-              c=cat_colors[cat], s=20, alpha=0.7, edgecolors='none', label=cat)
+              c=cat_colors[cat], s=s, alpha=a, edgecolors='none', label=cat)
 ax.legend(fontsize=11, markerscale=2, loc='best')
 ax.set_title("UMAP of pre-1900 word embeddings (d34-22btok, final layer)", fontsize=14)
 ax.set_xticks([]); ax.set_yticks([])
@@ -266,17 +326,21 @@ fig.savefig(os.path.join(FIGDIR, '11_umap_words.png'), bbox_inches='tight')
 print("Saved 11_umap_words.png")
 plt.close()
 
-# ---- Plot 2: UMAP with labels on a subset ----
+# ---- Plot 2: UMAP with labels on labeled words ----
 fig, ax = plt.subplots(figsize=(20, 15))
-for cat in cat_colors:
+for cat in draw_order:
     idxs = [i for i, c in enumerate(all_categories) if c == cat]
+    if not idxs: continue
+    s = 8 if cat == "Random" else 25
+    a = 0.2 if cat == "Random" else 0.7
     ax.scatter(umap_2d[idxs, 0], umap_2d[idxs, 1],
-              c=cat_colors[cat], s=25, alpha=0.6, edgecolors='none', label=cat)
-# Label every 3rd point to avoid clutter
-for i in range(0, len(all_words), 3):
-    ax.annotate(all_words[i], (umap_2d[i, 0], umap_2d[i, 1]),
-               fontsize=4, alpha=0.6, ha='center', va='bottom',
-               xytext=(0, 2), textcoords='offset points')
+              c=cat_colors[cat], s=s, alpha=a, edgecolors='none', label=cat)
+# Label only the categorized (non-random) words
+for i in range(len(all_words)):
+    if all_categories[i] != "Random":
+        ax.annotate(all_words[i], (umap_2d[i, 0], umap_2d[i, 1]),
+                   fontsize=4.5, alpha=0.65, ha='center', va='bottom',
+                   xytext=(0, 2), textcoords='offset points')
 ax.legend(fontsize=11, markerscale=2, loc='best')
 ax.set_title("UMAP of pre-1900 word embeddings (with labels)", fontsize=14)
 ax.set_xticks([]); ax.set_yticks([])
@@ -287,10 +351,13 @@ plt.close()
 
 # ---- Plot 3: PCA ----
 fig, ax = plt.subplots(figsize=(16, 12))
-for cat in cat_colors:
+for cat in draw_order:
     idxs = [i for i, c in enumerate(all_categories) if c == cat]
+    if not idxs: continue
+    s = 8 if cat == "Random" else 25
+    a = 0.3 if cat == "Random" else 0.8
     ax.scatter(pca_2d[idxs, 0], pca_2d[idxs, 1],
-              c=cat_colors[cat], s=20, alpha=0.7, edgecolors='none', label=cat)
+              c=cat_colors[cat], s=s, alpha=a, edgecolors='none', label=cat)
 ax.legend(fontsize=11, markerscale=2, loc='best')
 ax.set_title("PCA of pre-1900 word embeddings (d34-22btok, final layer)", fontsize=14)
 ax.set_xticks([]); ax.set_yticks([])
