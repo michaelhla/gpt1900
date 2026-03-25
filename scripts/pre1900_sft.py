@@ -57,6 +57,9 @@ parser.add_argument("--eval-tokens", type=int, default=20*524288, help="number o
 # Data
 parser.add_argument("--train-data", type=str, default="instruct_data/filtered_pairs.jsonl", help="training data JSONL")
 parser.add_argument("--val-data", type=str, default="instruct_data/val_pairs.jsonl", help="validation data JSONL")
+# Long conversation chunking
+parser.add_argument("--chunk-long", action="store_true", help="chunk long conversations into row_capacity-sized pieces (see all tokens)")
+parser.add_argument("--chunk-bos", action="store_true", help="prepend BOS to continuation chunks (only with --chunk-long)")
 # Output
 parser.add_argument("--dry-run", action="store_true", help="log to wandb but skip checkpoints/report")
 args = parser.parse_args()
@@ -139,21 +142,69 @@ def sft_data_generator_bos_bestfit(split, buffer_size=100):
     epoch = 1
     it = 0
 
-    def refill_buffer():
-        nonlocal cursor, epoch
-        while len(conv_buffer) < buffer_size:
-            conversation = dataset[cursor]
-            ids, _ = tokenizer.render_conversation(conversation)
-            conv_buffer.append(ids)
-            cursor += ddp_world_size
-            if cursor >= dataset_size:
-                cursor = cursor % dataset_size
-                epoch += 1
+    if args.chunk_long:
+        # When chunking long conversations, the buffer stores
+        # (ids, is_continuation) tuples. is_continuation=True means this
+        # chunk is a middle/end piece and gets its own row (no packing).
+        cont_buffer = []  # dedicated buffer for continuation chunks
+
+        def refill_buffer():
+            nonlocal cursor, epoch
+            while len(conv_buffer) < buffer_size:
+                conversation = dataset[cursor]
+                ids, _ = tokenizer.render_conversation(conversation, max_tokens=999999)
+                if len(ids) <= row_capacity:
+                    conv_buffer.append(ids)
+                else:
+                    for ci, start in enumerate(range(0, len(ids), row_capacity)):
+                        chunk = ids[start:start + row_capacity]
+                        if args.chunk_bos and ci > 0:
+                            chunk = [bos_token] + chunk[:row_capacity - 1]
+                        if ci == 0:
+                            conv_buffer.append(chunk)
+                        else:
+                            cont_buffer.append(chunk)
+                cursor += ddp_world_size
+                if cursor >= dataset_size:
+                    cursor = cursor % dataset_size
+                    epoch += 1
+    else:
+        cont_buffer = []  # always empty when not chunking
+
+        def refill_buffer():
+            nonlocal cursor, epoch
+            while len(conv_buffer) < buffer_size:
+                conversation = dataset[cursor]
+                ids, _ = tokenizer.render_conversation(conversation)
+                conv_buffer.append(ids)
+                cursor += ddp_world_size
+                if cursor >= dataset_size:
+                    cursor = cursor % dataset_size
+                    epoch += 1
 
     while True:
         rows = []
         row_lengths = []
         for _ in range(args.device_batch_size):
+            while len(conv_buffer) < buffer_size:
+                refill_buffer()
+
+            # Continuation chunks get their own dedicated row (no packing).
+            if cont_buffer:
+                conv = cont_buffer.pop(0)
+                row = conv[:row_capacity]
+                if len(row) < row_capacity:
+                    content_len = len(row)
+                    row.extend([bos_token] * (row_capacity - len(row)))
+                    row_lengths.append(content_len)
+                else:
+                    row_lengths.append(row_capacity)
+                rows.append(row)
+                # Don't increment consumed for continuation chunks —
+                # consumed tracks conversations, not chunks.
+                continue
+
+            # Normal best-fit packing (only first chunks / regular convs)
             row = []
             padded = False
             while len(row) < row_capacity:
