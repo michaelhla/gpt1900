@@ -178,71 +178,71 @@ def get_batch():
         epoch += 1
         for example_idx in rank_indices:
 
-        # Get the full conversation and gold answers
-        conversation = train_task[example_idx]
-        gold_answers = train_gold_answers[example_idx]  # list of strings
+            # Get the full conversation and gold answers
+            conversation = train_task[example_idx]
+            gold_answers = train_gold_answers[example_idx]  # list of strings
 
-        # Tokenize using chat mode
-        tokens = tokenizer.render_for_completion(conversation)
-        prefix_length = len(tokens)
+            # Tokenize using chat mode
+            tokens = tokenizer.render_for_completion(conversation)
+            prefix_length = len(tokens)
 
-        # Generate num_samples samples using batched generation
-        model.eval()
-        generated_token_sequences = []
-        masks = []
-        num_sampling_steps = args.num_samples // args.device_batch_size
-        for sampling_step in range(num_sampling_steps):
-            seed = hash((step, example_idx, sampling_step)) & 0x7FFFFFFF
-            with autocast_ctx:
-                generated_token_sequences_batch, masks_batch = engine.generate_batch(
-                    tokens,
-                    num_samples=args.device_batch_size,
-                    max_tokens=args.max_new_tokens,
-                    temperature=args.temperature,
-                    top_k=args.top_k,
-                    seed=seed,
-                )
-            generated_token_sequences.extend(generated_token_sequences_batch)
-            masks.extend(masks_batch)
+            # Generate num_samples samples using batched generation
+            model.eval()
+            generated_token_sequences = []
+            masks = []
+            num_sampling_steps = args.num_samples // args.device_batch_size
+            for sampling_step in range(num_sampling_steps):
+                seed = hash((step, example_idx, sampling_step)) & 0x7FFFFFFF
+                with autocast_ctx:
+                    generated_token_sequences_batch, masks_batch = engine.generate_batch(
+                        tokens,
+                        num_samples=args.device_batch_size,
+                        max_tokens=args.max_new_tokens,
+                        temperature=args.temperature,
+                        top_k=args.top_k,
+                        seed=seed,
+                    )
+                generated_token_sequences.extend(generated_token_sequences_batch)
+                masks.extend(masks_batch)
 
-        # Decode all generated texts
-        generated_texts = []
-        for sample_tokens in generated_token_sequences:
-            generated_tokens = sample_tokens[prefix_length:]
-            generated_text = tokenizer.decode(generated_tokens)
-            generated_texts.append(generated_text)
+            # Decode all generated texts
+            generated_texts = []
+            for sample_tokens in generated_token_sequences:
+                generated_tokens = sample_tokens[prefix_length:]
+                generated_text = tokenizer.decode(generated_tokens)
+                generated_texts.append(generated_text)
 
-        # Score all samples: format reward + SymPy correctness reward
-        format_rewards = [compute_format_reward(text) for text in generated_texts]
-        correctness_rewards = [compute_reward(text, gold_answers) for text in generated_texts]
+            # Score all samples: format reward + SymPy correctness reward
+            format_rewards = [compute_format_reward(text) for text in generated_texts]
+            correctness_rewards = [compute_reward(text, gold_answers) for text in generated_texts]
 
-        # Track parse failures for logging
-        parse_fails = sum(1 for text in generated_texts if extract_answer_latex(text) is None)
+            # Track parse failures for logging
+            parse_fails = sum(1 for text in generated_texts if extract_answer_latex(text) is None)
 
-        rewards_list = [f + c for f, c in zip(format_rewards, correctness_rewards)]
+            rewards_list = [f + c for f, c in zip(format_rewards, correctness_rewards)]
 
-        # Pad sequences so their lengths match
-        max_length = max(len(seq) for seq in generated_token_sequences)
-        padded_generated_token_sequences = [seq + [assistant_end] * (max_length - len(seq)) for seq in generated_token_sequences]
-        padded_masks = [mask + [0] * (max_length - len(mask)) for mask in masks]
-        # Stack into tensors
-        ids = torch.tensor(padded_generated_token_sequences, dtype=torch.long, device=device)
-        mask_ids = torch.tensor(padded_masks, dtype=torch.long, device=device)
-        inputs = ids[:, :-1]
-        targets = ids[:, 1:].clone()
-        targets[mask_ids[:, 1:] == 0] = -1
-        rewards = torch.tensor(rewards_list, dtype=torch.float, device=device)
-        # Advantages: subtract per-prompt mean (not z-score)
-        mu = rewards.mean()
-        advantages = rewards - mu
+            # Pad sequences so their lengths match
+            max_length = max(len(seq) for seq in generated_token_sequences)
+            padded_generated_token_sequences = [seq + [assistant_end] * (max_length - len(seq)) for seq in generated_token_sequences]
+            padded_masks = [mask + [0] * (max_length - len(mask)) for mask in masks]
+            # Stack into tensors
+            ids = torch.tensor(padded_generated_token_sequences, dtype=torch.long, device=device)
+            mask_ids = torch.tensor(padded_masks, dtype=torch.long, device=device)
+            inputs = ids[:, :-1]
+            targets = ids[:, 1:].clone()
+            targets[mask_ids[:, 1:] == 0] = -1
+            rewards = torch.tensor(rewards_list, dtype=torch.float, device=device)
+            # Advantages: subtract per-prompt mean (not z-score)
+            mu = rewards.mean()
+            advantages = rewards - mu
 
-        # Extra stats for logging
-        batch_stats = {
-            "correct_frac": sum(1 for c in correctness_rewards if c > 0) / len(correctness_rewards),
-            "format_frac": sum(1 for f in format_rewards if f > 0) / len(format_rewards),
-            "parse_fail_frac": parse_fails / len(generated_texts),
-        }
-        yield generated_token_sequences, inputs, targets, rewards, advantages, batch_stats
+            # Extra stats for logging
+            batch_stats = {
+                "correct_frac": sum(1 for c in correctness_rewards if c > 0) / len(correctness_rewards),
+                "format_frac": sum(1 for f in format_rewards if f > 0) / len(format_rewards),
+                "parse_fail_frac": parse_fails / len(generated_texts),
+            }
+            yield generated_token_sequences, inputs, targets, rewards, advantages, batch_stats
 
 
 # -----------------------------------------------------------------------------
@@ -383,7 +383,24 @@ def run_physics_eval(tokenizer, engine, max_tokens=2048, temperature=0.7, top_k=
         args.judge_model, args.max_concurrent_api,
     ))
 
-    return {tid: s for tid, s in zip(task_ids, scores)}
+    results = {tid: s for tid, s in zip(task_ids, scores)}
+
+    # Save generations to disk
+    generations_dir = os.path.join(base_dir, args.output_dir, "eval_generations")
+    os.makedirs(generations_dir, exist_ok=True)
+    gen_path = os.path.join(generations_dir, f"physics_eval_s{step:05d}.json")
+    gen_data = []
+    for (task, gen_text), score in zip(prompts_and_responses, scores):
+        gen_data.append({
+            "task_id": task["id"],
+            "score": score,
+            "generation": gen_text,
+        })
+    with open(gen_path, "w") as f:
+        json.dump(gen_data, f, indent=2, ensure_ascii=False)
+    print0(f"  Saved physics eval generations to {gen_path}")
+
+    return results
 
 
 # Short names for wandb logging
