@@ -146,27 +146,45 @@ def flash_attn_with_kvcache(q, k_cache, v_cache, k=None, v=None, cache_seqlens=N
 
     # SDPA fallback: manually manage KV cache
     B, T_new, H, D = q.shape
-    pos = cache_seqlens[0].item()  # assume uniform position across batch
+    positions = cache_seqlens.tolist()  # per-element positions
 
-    # Insert new k, v into cache (in-place, matching FA3 behavior)
-    if k is not None and v is not None:
-        k_cache[:, pos:pos+T_new, :, :] = k
-        v_cache[:, pos:pos+T_new, :, :] = v
+    # Check if all positions are the same (uniform case, e.g. prefill or original Engine)
+    if all(p == positions[0] for p in positions):
+        # Fast path: uniform positions
+        pos = positions[0]
+        if k is not None and v is not None:
+            k_cache[:, pos:pos+T_new, :, :] = k
+            v_cache[:, pos:pos+T_new, :, :] = v
+        end_pos = pos + T_new
+        k_full = k_cache[:, :end_pos, :, :]
+        v_full = v_cache[:, :end_pos, :, :]
 
-    # Get full cache up to current position + new tokens
-    end_pos = pos + T_new
-    k_full = k_cache[:, :end_pos, :, :]
-    v_full = v_cache[:, :end_pos, :, :]
+        q_sdpa = q.transpose(1, 2)
+        k_sdpa = k_full.transpose(1, 2)
+        v_sdpa = v_full.transpose(1, 2)
+        enable_gqa = q_sdpa.size(1) != k_sdpa.size(1)
+        y_sdpa = _sdpa_attention(q_sdpa, k_sdpa, v_sdpa, window_size, enable_gqa)
+        return y_sdpa.transpose(1, 2)
 
-    # Transpose to SDPA layout: (B, T, H, D) -> (B, H, T, D)
-    q_sdpa = q.transpose(1, 2)
-    k_sdpa = k_full.transpose(1, 2)
-    v_sdpa = v_full.transpose(1, 2)
-
-    enable_gqa = q_sdpa.size(1) != k_sdpa.size(1)
-    y_sdpa = _sdpa_attention(q_sdpa, k_sdpa, v_sdpa, window_size, enable_gqa)
-
-    return y_sdpa.transpose(1, 2)  # back to (B, T, H, D)
+    # Slow path: non-uniform positions (continuous batching decode, T_new==1)
+    # Process each batch element individually. This is fine since SDPA fallback
+    # only runs on non-H100 hardware where continuous batching is less critical.
+    outputs = []
+    for b in range(B):
+        pos = positions[b]
+        if k is not None and v is not None:
+            k_cache[b, pos:pos+T_new, :, :] = k[b]
+            v_cache[b, pos:pos+T_new, :, :] = v[b]
+        end_pos = pos + T_new
+        k_b = k_cache[b:b+1, :end_pos, :, :]
+        v_b = v_cache[b:b+1, :end_pos, :, :]
+        q_b = q[b:b+1].transpose(1, 2)
+        k_b = k_b.transpose(1, 2)
+        v_b = v_b.transpose(1, 2)
+        enable_gqa = q_b.size(1) != k_b.size(1)
+        y_b = _sdpa_attention(q_b, k_b, v_b, window_size, enable_gqa)
+        outputs.append(y_b.transpose(1, 2))
+    return torch.cat(outputs, dim=0)
 
 
 # =============================================================================
