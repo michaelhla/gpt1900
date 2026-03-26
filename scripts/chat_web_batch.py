@@ -34,7 +34,7 @@ from fastapi.responses import StreamingResponse, HTMLResponse, FileResponse
 from pydantic import BaseModel
 from typing import List, Optional, AsyncGenerator
 from nanochat.common import autodetect_device_type
-from nanochat.checkpoint_manager import load_model
+from nanochat.checkpoint_manager import load_model, build_model, find_last_step
 from nanochat.batch_engine import BatchEngine
 
 # TTFT timeout: if first token doesn't arrive within this many seconds, return 503
@@ -54,7 +54,8 @@ MAX_MAX_TOKENS = 4096
 parser = argparse.ArgumentParser(description='NanoChat Batch Server (one per GPU)')
 parser.add_argument('--gpu-id', type=int, default=0, help='GPU device index')
 parser.add_argument('-i', '--source', type=str, default="sft", help="Source of the model: sft|rl")
-parser.add_argument('-t', '--temperature', type=float, default=0.8, help='Default temperature')
+parser.add_argument('--model-dir', type=str, default=None, help='Load directly from this directory (bypasses -i/-g)')
+parser.add_argument('-t', '--temperature', type=float, default=0.6, help='Default temperature')
 parser.add_argument('-k', '--top-k', type=int, default=50, help='Default top-k')
 parser.add_argument('-m', '--max-tokens', type=int, default=512, help='Default max tokens')
 parser.add_argument('-g', '--model-tag', type=str, default=None, help='Model tag to load')
@@ -85,26 +86,22 @@ class ChatRequest(BaseModel):
 
 
 def validate_chat_request(request: ChatRequest):
-    """Validate chat request to prevent abuse."""
+    """Validate chat request to prevent abuse. Since we're single-turn, only the last user message matters."""
     if len(request.messages) == 0:
         raise HTTPException(status_code=400, detail="At least one message is required")
-    if len(request.messages) > MAX_MESSAGES_PER_REQUEST:
-        raise HTTPException(status_code=400, detail=f"Too many messages. Maximum {MAX_MESSAGES_PER_REQUEST} allowed")
 
-    total_length = 0
-    for i, message in enumerate(request.messages):
-        if not message.content:
-            raise HTTPException(status_code=400, detail=f"Message {i} has empty content")
-        if len(message.content) > MAX_MESSAGE_LENGTH:
-            raise HTTPException(status_code=400, detail=f"Message {i} too long. Max {MAX_MESSAGE_LENGTH} chars")
-        total_length += len(message.content)
-
-    if total_length > MAX_TOTAL_CONVERSATION_LENGTH:
-        raise HTTPException(status_code=400, detail=f"Conversation too long. Max {MAX_TOTAL_CONVERSATION_LENGTH} chars")
-
-    for i, message in enumerate(request.messages):
-        if message.role not in ["user", "assistant"]:
-            raise HTTPException(status_code=400, detail=f"Message {i} has invalid role")
+    # Find the last user message — that's all we'll use
+    last_user_msg = None
+    for message in reversed(request.messages):
+        if message.role == "user":
+            last_user_msg = message
+            break
+    if last_user_msg is None:
+        raise HTTPException(status_code=400, detail="No user message found")
+    if not last_user_msg.content:
+        raise HTTPException(status_code=400, detail="User message has empty content")
+    if len(last_user_msg.content) > MAX_MESSAGE_LENGTH:
+        raise HTTPException(status_code=400, detail=f"Message too long. Max {MAX_MESSAGE_LENGTH} chars")
 
     if request.temperature is not None and not (MIN_TEMPERATURE <= request.temperature <= MAX_TEMPERATURE):
         raise HTTPException(status_code=400, detail=f"Temperature must be {MIN_TEMPERATURE}-{MAX_TEMPERATURE}")
@@ -118,7 +115,11 @@ def validate_chat_request(request: ChatRequest):
 async def lifespan(app: FastAPI):
     """Load model and start batch engine on startup."""
     print(f"Loading model on GPU {args.gpu_id}...")
-    model, tokenizer, _ = load_model(args.source, device, phase="eval", model_tag=args.model_tag, step=args.step)
+    if args.model_dir:
+        step = args.step if args.step is not None else find_last_step(args.model_dir)
+        model, tokenizer, _ = build_model(args.model_dir, step, device, phase="eval")
+    else:
+        model, tokenizer, _ = load_model(args.source, device, phase="eval", model_tag=args.model_tag, step=args.step)
 
     engine = BatchEngine(
         model=model,
@@ -218,24 +219,18 @@ async def chat_completions(request: ChatRequest):
         logger.info(f"[{msg.role.upper()}]: {msg.content}")
     logger.info("-" * 20)
 
-    # Build conversation tokens
+    # Build conversation tokens (single-turn: only use the last user message)
     bos = tokenizer.get_bos_token_id()
     user_start = tokenizer.encode_special("<|user_start|>")
     user_end = tokenizer.encode_special("<|user_end|>")
     assistant_start = tokenizer.encode_special("<|assistant_start|>")
-    assistant_end = tokenizer.encode_special("<|assistant_end|>")
 
-    conversation_tokens = [bos]
-    for message in request.messages:
-        if message.role == "user":
-            conversation_tokens.append(user_start)
-            conversation_tokens.extend(tokenizer.encode(message.content))
-            conversation_tokens.append(user_end)
-        elif message.role == "assistant":
-            conversation_tokens.append(assistant_start)
-            conversation_tokens.extend(tokenizer.encode(message.content))
-            conversation_tokens.append(assistant_end)
-    conversation_tokens.append(assistant_start)
+    # Extract last user message (already validated to exist)
+    last_user_content = next(m.content for m in reversed(request.messages) if m.role == "user")
+
+    conversation_tokens = [bos, user_start]
+    conversation_tokens.extend(tokenizer.encode(last_user_content))
+    conversation_tokens.extend([user_end, assistant_start])
 
     # Submit to batch engine
     request_id = str(uuid.uuid4())

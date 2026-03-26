@@ -491,9 +491,8 @@
                                 throw new Error(data.error);
                             }
                         } catch (e) {
-                            if (e.message && !e.message.startsWith('Unexpected') && !e.message.startsWith('JSON')) {
-                                throw e;
-                            }
+                            if (e instanceof SyntaxError) continue; // partial SSE chunk, skip
+                            throw e;
                         }
                     }
                 }

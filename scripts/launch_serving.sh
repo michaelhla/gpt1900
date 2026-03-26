@@ -19,10 +19,11 @@ NUM_GPUS=${NUM_GPUS:-8}
 MAX_BATCH=${MAX_BATCH:-64}
 SOURCE=${SOURCE:-sft}
 MODEL_TAG=${MODEL_TAG:-}
+MODEL_DIR=${MODEL_DIR:-}
 STEP=${STEP:-}
 BASE_PORT=8001
 NGINX_PORT=80
-TEMPERATURE=0.8
+TEMPERATURE=0.6
 TOP_K=50
 MAX_TOKENS=512
 API_KEY=${BACKEND_API_KEY:-}
@@ -34,6 +35,7 @@ while [[ $# -gt 0 ]]; do
         --max-batch) MAX_BATCH="$2"; shift 2;;
         --source) SOURCE="$2"; shift 2;;
         --model-tag) MODEL_TAG="$2"; shift 2;;
+        --model-dir) MODEL_DIR="$2"; shift 2;;
         --step) STEP="$2"; shift 2;;
         --nginx-port) NGINX_PORT="$2"; shift 2;;
         --temperature) TEMPERATURE="$2"; shift 2;;
@@ -106,6 +108,9 @@ cat >> "$NGINX_CONF" << FOOTER
         limit_req zone=chat_limit burst=20 nodelay;
         limit_conn conn_limit 4;
 
+        # Limit request body size (single-turn: one message shouldn't exceed 32KB)
+        client_max_body_size 32k;
+
         # SSE-compatible proxy settings
         proxy_http_version 1.1;
         proxy_set_header Connection '';
@@ -166,6 +171,7 @@ echo "Launching $NUM_GPUS worker processes..."
 for ((gpu=0; gpu<NUM_GPUS; gpu++)); do
     port=$((BASE_PORT + gpu))
     extra_args=""
+    [[ -n "$MODEL_DIR" ]] && extra_args="$extra_args --model-dir $MODEL_DIR"
     [[ -n "$MODEL_TAG" ]] && extra_args="$extra_args --model-tag $MODEL_TAG"
     [[ -n "$STEP" ]] && extra_args="$extra_args --step $STEP"
 
