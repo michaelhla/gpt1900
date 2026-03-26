@@ -25,6 +25,7 @@ NGINX_PORT=80
 TEMPERATURE=0.8
 TOP_K=50
 MAX_TOKENS=512
+API_KEY=${BACKEND_API_KEY:-}
 
 # Parse args
 while [[ $# -gt 0 ]]; do
@@ -69,8 +70,15 @@ events {
 }
 
 http {
-    # Rate limiting: 10 req/s per IP with burst of 20
-    limit_req_zone $binary_remote_addr zone=chat_limit:10m rate=10r/s;
+    # Use real client IP from X-Forwarded-For when behind a proxy (e.g. Vercel edge),
+    # falling back to direct remote_addr for direct connections
+    map $http_x_forwarded_for $rate_limit_key {
+        ""      $binary_remote_addr;
+        default $http_x_forwarded_for;
+    }
+
+    # Rate limiting: 10 req/s per real client IP with burst of 20
+    limit_req_zone $rate_limit_key zone=chat_limit:10m rate=10r/s;
     # Max 4 concurrent connections per IP
     limit_conn_zone $binary_remote_addr zone=conn_limit:10m;
 
@@ -109,6 +117,24 @@ cat >> "$NGINX_CONF" << FOOTER
         chunked_transfer_encoding on;
 
         location / {
+            proxy_pass http://nanochat;
+            proxy_read_timeout 300s;
+        }
+
+        # Chat completions endpoint — require API key if configured
+        location /chat/completions {
+FOOTER
+
+# Conditionally add API key check
+if [[ -n "$API_KEY" ]]; then
+    cat >> "$NGINX_CONF" << FOOTER
+            if (\$http_authorization != "Bearer ${API_KEY}") {
+                return 401 '{"error": "Unauthorized"}';
+            }
+FOOTER
+fi
+
+cat >> "$NGINX_CONF" << FOOTER
             proxy_pass http://nanochat;
             proxy_read_timeout 300s;
         }
@@ -170,6 +196,11 @@ echo " NanoChat serving is running!"
 echo " Public endpoint: http://localhost:${NGINX_PORT}"
 echo " Workers: $NUM_GPUS GPUs, ${MAX_BATCH} batch/GPU"
 echo " Total capacity: $((NUM_GPUS * MAX_BATCH)) concurrent requests"
+if [[ -n "$API_KEY" ]]; then
+    echo " API key auth: ENABLED"
+else
+    echo " API key auth: DISABLED (set BACKEND_API_KEY to enable)"
+fi
 echo "========================================="
 echo ""
 echo "Press Ctrl+C to stop all processes."

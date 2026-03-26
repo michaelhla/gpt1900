@@ -1,86 +1,50 @@
 export const config = { runtime: 'edge' };
 
-const RUNPOD_BASE = 'https://api.runpod.ai/v2';
-
 export default async function handler(req) {
     if (req.method !== 'POST') {
         return new Response('Method not allowed', { status: 405 });
     }
 
-    const { model, messages, temperature, max_tokens, top_k } = await req.json();
+    const BACKEND_URL = process.env.BACKEND_URL;
+    const BACKEND_API_KEY = process.env.BACKEND_API_KEY;
 
-    const RUNPOD_API_KEY = process.env.RUNPOD_API_KEY;
-    const endpoints = {
-        scholar: process.env.BASE_ENDPOINT_ID,
-        conversationalist: process.env.COHERENCE_ENDPOINT_ID,
+    if (!BACKEND_URL) {
+        return new Response(JSON.stringify({ error: 'Backend not configured' }), { status: 500 });
+    }
+
+    const { messages, temperature, max_tokens, top_k } = await req.json();
+
+    // Forward real client IP for rate limiting
+    const clientIp = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+        || req.headers.get('x-real-ip')
+        || 'unknown';
+
+    const headers = {
+        'Content-Type': 'application/json',
+        'X-Forwarded-For': clientIp,
     };
-
-    const endpointId = endpoints[model];
-    if (!endpointId) {
-        return new Response(JSON.stringify({ error: `Unknown model: ${model}` }), { status: 400 });
+    if (BACKEND_API_KEY) {
+        headers['Authorization'] = `Bearer ${BACKEND_API_KEY}`;
     }
 
-    const headers = { Authorization: `Bearer ${RUNPOD_API_KEY}`, 'Content-Type': 'application/json' };
-
-    // Submit job to RunPod
-    const runResp = await fetch(`${RUNPOD_BASE}/${endpointId}/run`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ input: { messages, temperature, max_tokens, top_k } }),
-    });
-
-    if (!runResp.ok) {
-        return new Response(JSON.stringify({ error: 'RunPod submit failed' }), { status: 502 });
+    let backendResp;
+    try {
+        backendResp = await fetch(`${BACKEND_URL}/chat/completions`, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({ messages, temperature, max_tokens, top_k }),
+        });
+    } catch (e) {
+        return new Response(JSON.stringify({ error: 'Backend unavailable' }), { status: 502 });
     }
 
-    const job = await runResp.json();
-    const jobId = job.id;
+    if (!backendResp.ok) {
+        const detail = await backendResp.text().catch(() => 'Unknown error');
+        return new Response(JSON.stringify({ error: detail }), { status: backendResp.status });
+    }
 
-    // Stream: poll RunPod /stream/{jobId} and convert to SSE
-    const encoder = new TextEncoder();
-    const stream = new ReadableStream({
-        async start(controller) {
-            const send = (obj) => controller.enqueue(encoder.encode(`data: ${JSON.stringify(obj)}\n\n`));
-            let wakeSent = false;
-
-            try {
-                while (true) {
-                    const resp = await fetch(`${RUNPOD_BASE}/${endpointId}/stream/${jobId}`, { headers });
-                    const data = await resp.json();
-                    const status = data.status || '';
-
-                    if (status === 'IN_QUEUE' && !wakeSent) {
-                        send({ status: 'waking' });
-                        wakeSent = true;
-                    }
-
-                    for (const chunk of data.stream || []) {
-                        const output = chunk.output;
-                        if (output && output.text) {
-                            send({ token: output.text });
-                        }
-                    }
-
-                    if (status === 'COMPLETED') {
-                        send({ done: true });
-                        break;
-                    }
-                    if (status === 'FAILED') {
-                        send({ error: data.error || 'Generation failed' });
-                        break;
-                    }
-
-                    await new Promise((r) => setTimeout(r, 250));
-                }
-            } catch (e) {
-                send({ error: e.message });
-            } finally {
-                controller.close();
-            }
-        },
-    });
-
-    return new Response(stream, {
+    // Pipe the SSE stream directly back to the client
+    return new Response(backendResp.body, {
         headers: {
             'Content-Type': 'text/event-stream',
             'Cache-Control': 'no-cache',
