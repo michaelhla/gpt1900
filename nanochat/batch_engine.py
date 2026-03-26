@@ -176,6 +176,9 @@ class BatchEngine:
         # Pending requests: (request_id, prompt_tokens, temperature, top_k, max_tokens, output_queue)
         self.pending: asyncio.Queue = asyncio.Queue()
 
+        # Cancelled request IDs — checked during prefill to skip cancelled pending requests
+        self.cancelled: set[str] = set()
+
         # Event to wake up the scheduler when there's work
         self.has_work = asyncio.Event()
 
@@ -197,12 +200,15 @@ class BatchEngine:
         return output_queue
 
     def cancel_request(self, request_id):
-        """Mark a request for cancellation."""
+        """Cancel a request — works for both pending and active requests."""
+        # Mark as cancelled so pending requests get skipped during prefill
+        self.cancelled.add(request_id)
+        # If already active, mark completed so it gets cleaned up
         for req in self.active:
             if req.request_id == request_id:
                 req.completed = True
                 req.output_queue.put_nowait({"done": True})
-                break
+                return
 
     @torch.inference_mode()
     def _prefill_one(self, prompt_tokens, temperature, top_k, max_tokens, request_id, output_queue):
@@ -304,9 +310,15 @@ class BatchEngine:
         """Main scheduler loop. Run as an asyncio task."""
         while self._running:
             # 1. Prefill at most 1 new request per iteration (limits decode latency for existing requests)
-            if not self.pending.empty() and self.kv_pool.has_free_slot():
+            while not self.pending.empty() and self.kv_pool.has_free_slot():
                 request_id, prompt_tokens, temperature, top_k, max_tokens, output_queue = self.pending.get_nowait()
+                # Skip cancelled requests — don't waste GPU on prefill
+                if request_id in self.cancelled:
+                    self.cancelled.discard(request_id)
+                    output_queue.put_nowait({"done": True})
+                    continue
                 self._prefill_one(prompt_tokens, temperature, top_k, max_tokens, request_id, output_queue)
+                break  # only prefill 1 per iteration
 
             # 2. Run one batched decode step
             self._decode_step()

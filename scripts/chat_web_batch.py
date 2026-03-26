@@ -37,6 +37,9 @@ from nanochat.common import autodetect_device_type
 from nanochat.checkpoint_manager import load_model
 from nanochat.batch_engine import BatchEngine
 
+# TTFT timeout: if first token doesn't arrive within this many seconds, return 503
+TTFT_TIMEOUT = 20
+
 # Abuse prevention limits (same as chat_web.py)
 MAX_MESSAGES_PER_REQUEST = 500
 MAX_MESSAGE_LENGTH = 8000
@@ -165,12 +168,24 @@ async def logo():
     return FileResponse(os.path.join("nanochat", "logo.svg"), media_type="image/svg+xml")
 
 
-async def stream_from_queue(output_queue: asyncio.Queue, tokenizer, request_id: str) -> AsyncGenerator[str, None]:
+async def stream_from_queue(output_queue: asyncio.Queue, tokenizer, request_id: str,
+                            engine: BatchEngine) -> AsyncGenerator[str, None]:
     """Read tokens from the batch engine's output queue and stream as SSE."""
     accumulated_tokens = []
     last_clean_text = ""
+    first_token = True
     while True:
-        msg = await output_queue.get()
+        try:
+            # Apply TTFT timeout only for the first token
+            timeout = TTFT_TIMEOUT if first_token else None
+            msg = await asyncio.wait_for(output_queue.get(), timeout=timeout)
+        except asyncio.TimeoutError:
+            # TTFT timeout — cancel the request so the GPU doesn't waste work on it
+            engine.cancel_request(request_id)
+            yield f"data: {json.dumps({'error': 'Server is busy. Please try again in a few seconds.'})}\n\n"
+            yield f"data: {json.dumps({'done': True})}\n\n"
+            return
+        first_token = False
         if msg.get("done"):
             yield f"data: {json.dumps({'done': True})}\n\n"
             break
@@ -237,7 +252,7 @@ async def chat_completions(request: ChatRequest):
     )
 
     return StreamingResponse(
-        stream_from_queue(output_queue, tokenizer, request_id),
+        stream_from_queue(output_queue, tokenizer, request_id, engine),
         media_type="text/event-stream",
     )
 
