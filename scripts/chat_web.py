@@ -76,7 +76,7 @@ parser.add_argument('--device-type', type=str, default='', choices=['cuda', 'cpu
 parser.add_argument('--host', type=str, default='0.0.0.0', help='Host to bind the server to')
 def _default_log_db():
     """Use NVMe storage if available (cloud GPUs), otherwise current directory."""
-    for nvme in ["/workspace", "/mnt/nvme", "/local_nvme"]:
+    for nvme in ["/opt/dlami/nvme", "/workspace", "/mnt/nvme", "/local_nvme"]:
         if os.path.isdir(nvme):
             return os.path.join(nvme, "chat_logs.db")
     return "chat_logs.db"

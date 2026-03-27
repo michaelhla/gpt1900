@@ -7,7 +7,7 @@ problems, partial credit for multi-answer.
 
 Fork of discovery_rl.py with key changes:
   - Replace Claude judge with SymPy reward (no API calls for training rewards)
-  - Keep format reward (0.3 for correct <think> + \\answer{} tags)
+  - Keep format reward (0.1 for correct <think> + \\answer{} tags)
   - Load gold_answers as arrays (not single strings)
   - Keep EVAL.json physics eval (orthogonal qualitative eval via Claude judge)
   - Add logging: reward/correct_frac, reward/sympy_parse_fail_frac, reward/format_frac
@@ -20,6 +20,7 @@ torchrun --standalone --nproc_per_node=8 -m scripts.pre1900_scripts.verifiable_r
 """
 
 import argparse
+import copy
 import os
 import re
 import asyncio
@@ -44,7 +45,7 @@ from scripts.pre1900_scripts.constants import QUANTITATIVE_REASONING_SYSTEM_PROM
 # -----------------------------------------------------------------------------
 # Format reward
 
-FORMAT_REWARD = 0.3  # partial credit for using the correct reasoning format
+FORMAT_REWARD = 0.1  # partial credit for using the correct reasoning format
 
 def compute_format_reward(response: str) -> float:
     """Return partial format reward: 0.15 for <think>...</think>, 0.15 for \\answer{...}."""
@@ -84,6 +85,7 @@ parser.add_argument("--embedding-lr", type=float, default=0.2, help="learning ra
 parser.add_argument("--unembedding-lr", type=float, default=0.004, help="learning rate for unembedding parameters (Adam)")
 parser.add_argument("--matrix-lr", type=float, default=0.02, help="learning rate for matrix parameters (Muon)")
 parser.add_argument("--weight-decay", type=float, default=0.0, help="weight decay for embedding/unembedding parameters (Adam)")
+parser.add_argument("--kl-coeff", type=float, default=0.0, help="KL penalty coefficient (0 = disabled). Penalizes divergence from frozen reference model.")
 parser.add_argument("--init-lr-frac", type=float, default=0.05, help="initial LR as fraction of base LR")
 # Evaluation / checkpointing
 parser.add_argument("--eval-every", type=int, default=60, help="evaluate correctness every N steps")
@@ -120,6 +122,16 @@ base_dir = get_base_dir()
 checkpoints_dir = os.path.join(base_dir, args.checkpoints_dir)
 model, tokenizer, meta = load_model_from_dir(checkpoints_dir, device, phase="eval", model_tag=args.model_tag, step=args.model_step)
 engine = Engine(model, tokenizer)
+
+# Frozen reference model for KL penalty
+if args.kl_coeff > 0:
+    ref_model = copy.deepcopy(model)
+    for p in ref_model.parameters():
+        p.requires_grad = False
+    ref_model.eval()
+    print0(f"Created frozen reference model for KL penalty (β={args.kl_coeff})")
+else:
+    ref_model = None
 
 # -----------------------------------------------------------------------------
 # Load training and validation data (prompts + gold answers)
@@ -506,6 +518,7 @@ for step in range(args.resume_step, num_steps):
     # Forward/Backward on rollouts over multiple examples
     rewards_list = []
     sequence_lengths = []
+    kl_accumulator = 0.0
     agg_stats = {"correct_frac": 0.0, "format_frac": 0.0, "parse_fail_frac": 0.0}
     for example_step in range(examples_per_rank):
         sequences_all, inputs_all, targets_all, rewards_all, advantages_all, batch_stats = next(batch_iterator)
@@ -527,6 +540,16 @@ for step in range(args.resume_step, num_steps):
             num_valid = (targets >= 0).sum().clamp(min=1)
             pg_obj = pg_obj / (num_valid * num_passes * examples_per_rank)
             loss = -pg_obj
+            # KL penalty: penalize divergence from frozen reference model
+            if ref_model is not None:
+                with torch.no_grad(), autocast_ctx:
+                    ref_logp = -ref_model(inputs, targets, loss_reduction='none').view_as(inputs)
+                # Per-token KL: logp_policy - logp_ref (only on valid tokens)
+                valid_mask = (targets >= 0).float()
+                kl_per_token = (logp - ref_logp) * valid_mask
+                kl_penalty = kl_per_token.sum() / (num_valid * num_passes * examples_per_rank)
+                loss = loss + args.kl_coeff * kl_penalty
+                kl_accumulator += kl_penalty.item()
             loss.backward()
             print0(f"Step {step}/{num_steps} | Example step {example_step} | Pass {pass_idx} | loss: {loss.item():.6f} | Average reward: {rewards.mean().item()}")
         rewards_list.append(rewards_all.mean().item())
@@ -547,14 +570,17 @@ for step in range(args.resume_step, num_steps):
         mean_reward = mean_reward_tensor.item()
         mean_sequence_length = mean_sequence_length_tensor.item()
     print0(f"Step {step}/{num_steps} | Average reward: {mean_reward} | Average sequence length: {mean_sequence_length:.2f} | Correct: {agg_stats['correct_frac']:.2%} | Format: {agg_stats['format_frac']:.2%}")
-    wandb_run.log({
+    log_dict = {
         "step": step,
         "reward": mean_reward,
         "sequence_length": mean_sequence_length,
         "reward/correct_frac": agg_stats["correct_frac"],
         "reward/format_frac": agg_stats["format_frac"],
         "reward/sympy_parse_fail_frac": agg_stats["parse_fail_frac"],
-    })
+    }
+    if ref_model is not None:
+        log_dict["kl_penalty"] = kl_accumulator
+    wandb_run.log(log_dict)
 
     # Update model parameters
     lrm = get_lr_multiplier(step)
