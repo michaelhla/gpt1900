@@ -33,12 +33,13 @@ Abuse Prevention:
 import argparse
 import json
 import os
+import time
 import torch
 import asyncio
 import logging
 import random
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse, HTMLResponse, FileResponse
 from pydantic import BaseModel
@@ -48,6 +49,7 @@ from contextlib import nullcontext
 from nanochat.common import compute_init, autodetect_device_type
 from nanochat.checkpoint_manager import load_model
 from nanochat.engine import Engine
+from nanochat.chat_logger import ChatLogger
 
 # Abuse prevention limits
 MAX_MESSAGES_PER_REQUEST = 500
@@ -72,6 +74,13 @@ parser.add_argument('-p', '--port', type=int, default=8000, help='Port to run th
 parser.add_argument('-d', '--dtype', type=str, default='bfloat16', choices=['float32', 'bfloat16'])
 parser.add_argument('--device-type', type=str, default='', choices=['cuda', 'cpu', 'mps'], help='Device type for evaluation: cuda|cpu|mps. empty => autodetect')
 parser.add_argument('--host', type=str, default='0.0.0.0', help='Host to bind the server to')
+def _default_log_db():
+    """Use NVMe storage if available (cloud GPUs), otherwise current directory."""
+    for nvme in ["/workspace", "/mnt/nvme", "/local_nvme"]:
+        if os.path.isdir(nvme):
+            return os.path.join(nvme, "chat_logs.db")
+    return "chat_logs.db"
+parser.add_argument('--log-db', type=str, default=_default_log_db(), help='Path to SQLite log database')
 args = parser.parse_args()
 
 # Configure logging for conversation traffic
@@ -156,6 +165,7 @@ class ChatRequest(BaseModel):
     temperature: Optional[float] = None
     max_tokens: Optional[int] = None
     top_k: Optional[int] = None
+    conversation_id: Optional[str] = None
 
 def validate_chat_request(request: ChatRequest):
     """Validate chat request to prevent abuse."""
@@ -226,8 +236,11 @@ async def lifespan(app: FastAPI):
     print("Loading nanochat models across GPUs...")
     app.state.worker_pool = WorkerPool(num_gpus=args.num_gpus)
     await app.state.worker_pool.initialize(args.source, model_tag=args.model_tag, step=args.step)
+    app.state.chat_logger = ChatLogger(args.log_db)
+    print(f"Logging to {args.log_db}")
     print(f"Server ready at http://localhost:{args.port}")
     yield
+    app.state.chat_logger.close()
 
 app = FastAPI(lifespan=lifespan)
 
@@ -308,10 +321,17 @@ async def generate_stream(
                     yield f"data: {json.dumps({'token': new_text, 'gpu': worker.gpu_id}, ensure_ascii=False)}\n\n"
                     last_clean_text = current_text
 
+    # Flush any remaining tokens that were buffered due to incomplete UTF-8
+    if accumulated_tokens:
+        final_text = worker.tokenizer.decode(accumulated_tokens)
+        remaining = final_text[len(last_clean_text):]
+        if remaining and remaining != '�':
+            yield f"data: {json.dumps({'token': remaining.replace('�', ''), 'gpu': worker.gpu_id}, ensure_ascii=False)}\n\n"
+
     yield f"data: {json.dumps({'done': True})}\n\n"
 
 @app.post("/chat/completions")
-async def chat_completions(request: ChatRequest):
+async def chat_completions(request: ChatRequest, raw_request: Request):
     """Chat completion endpoint (streaming only) - uses worker pool for multi-GPU."""
 
     # Basic validation to prevent abuse
@@ -322,6 +342,10 @@ async def chat_completions(request: ChatRequest):
     for i, message in enumerate(request.messages):
         logger.info(f"[{message.role.upper()}]: {message.content}")
     logger.info("-"*20)
+
+    start_time = time.monotonic()
+    client_ip = raw_request.headers.get("x-forwarded-for", raw_request.client.host if raw_request.client else "unknown")
+    user_agent = raw_request.headers.get("user-agent", "")
 
     # Acquire a worker from the pool (will wait if all are busy)
     worker_pool = app.state.worker_pool
@@ -347,6 +371,7 @@ async def chat_completions(request: ChatRequest):
                 conversation_tokens.append(assistant_end)
 
         conversation_tokens.append(assistant_start)
+        prompt_token_count = len(conversation_tokens)
 
         # Streaming response with worker release after completion
         response_tokens = []
@@ -365,11 +390,28 @@ async def chat_completions(request: ChatRequest):
                         response_tokens.append(chunk_data["token"])
                     yield chunk
             finally:
-                # Log the assistant response to console
                 full_response = "".join(response_tokens)
+                latency_ms = (time.monotonic() - start_time) * 1000
                 logger.info(f"[ASSISTANT] (GPU {worker.gpu_id}): {full_response}")
                 logger.info("="*20)
-                # Release worker back to pool after streaming is done
+                # Log to database
+                try:
+                    app.state.chat_logger.log_request(
+                        conversation_id=request.conversation_id,
+                        messages_json=json.dumps([m.model_dump() for m in request.messages]),
+                        response_text=full_response,
+                        temperature=request.temperature or args.temperature,
+                        top_k=request.top_k or args.top_k,
+                        max_tokens=request.max_tokens or args.max_tokens,
+                        prompt_tokens=prompt_token_count,
+                        completion_tokens=len(response_tokens),
+                        latency_ms=latency_ms,
+                        client_ip=client_ip,
+                        user_agent=user_agent,
+                        gpu_id=worker.gpu_id,
+                    )
+                except Exception as log_err:
+                    logger.error(f"Failed to log to database: {log_err}")
                 await worker_pool.release_worker(worker)
 
         return StreamingResponse(
@@ -377,7 +419,20 @@ async def chat_completions(request: ChatRequest):
             media_type="text/event-stream"
         )
     except Exception as e:
-        # Make sure to release worker even on error
+        # Log the failed request
+        try:
+            latency_ms = (time.monotonic() - start_time) * 1000
+            app.state.chat_logger.log_request(
+                conversation_id=request.conversation_id,
+                messages_json=json.dumps([m.model_dump() for m in request.messages]),
+                response_text="",
+                latency_ms=latency_ms,
+                client_ip=client_ip,
+                user_agent=user_agent,
+                error=str(e),
+            )
+        except Exception:
+            pass
         await worker_pool.release_worker(worker)
         raise e
 
@@ -391,6 +446,23 @@ async def health():
         "num_gpus": worker_pool.num_gpus if worker_pool else 0,
         "available_workers": worker_pool.available_workers.qsize() if worker_pool else 0
     }
+
+@app.get("/logs")
+async def logs(
+    limit: int = 50,
+    offset: int = 0,
+    conversation_id: Optional[str] = None,
+    since: Optional[str] = None,
+    until: Optional[str] = None,
+):
+    """View recent chat logs. Filterable by conversation_id, since/until (ISO timestamps)."""
+    return app.state.chat_logger.get_logs(
+        limit=min(limit, 500),
+        offset=offset,
+        conversation_id=conversation_id,
+        since=since,
+        until=until,
+    )
 
 @app.get("/stats")
 async def stats():

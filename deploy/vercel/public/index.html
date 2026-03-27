@@ -595,6 +595,7 @@
         const infoOverlay = document.getElementById('infoOverlay');
 
         let messages = [];
+        let conversationId = crypto.randomUUID();
         let isGenerating = false;
         let currentTemperature = 0.8;
         let currentTopK = 50;
@@ -620,6 +621,7 @@
 
         function clearConversation() {
             messages = [];
+            conversationId = crypto.randomUUID();
             sessionStorage.removeItem('gpt1900_messages');
             showWelcome();
         }
@@ -925,6 +927,7 @@
                         temperature: currentTemperature,
                         max_tokens: 512,
                         top_k: currentTopK,
+                        conversation_id: conversationId,
                     }),
                 });
 
@@ -936,36 +939,35 @@
                 const decoder = new TextDecoder();
                 let fullResponse = '';
                 let started = false;
+                let sseBuffer = '';
 
                 while (true) {
                     const { done, value } = await reader.read();
                     if (done) break;
 
-                    const chunk = decoder.decode(value);
-                    const lines = chunk.split('\n');
+                    sseBuffer += decoder.decode(value, { stream: true });
+                    const events = sseBuffer.split('\n\n');
+                    // Last element may be incomplete — keep it in the buffer
+                    sseBuffer = events.pop();
 
-                    for (const line of lines) {
+                    for (const event of events) {
+                        const line = event.trim();
                         if (!line.startsWith('data: ')) continue;
-                        try {
-                            const data = JSON.parse(line.slice(6));
+                        const data = JSON.parse(line.slice(6));
 
-                            if (data.token) {
-                                if (!started) {
-                                    assistantContent.textContent = '';
-                                    started = true;
-                                    startTalkingAnimation();
-                                }
-                                fullResponse += data.token;
-                                assistantContent.textContent = fullResponse;
-                                chatContainer.scrollTop = chatContainer.scrollHeight;
+                        if (data.token) {
+                            if (!started) {
+                                assistantContent.textContent = '';
+                                started = true;
+                                startTalkingAnimation();
                             }
+                            fullResponse += data.token;
+                            assistantContent.textContent = fullResponse;
+                            chatContainer.scrollTop = chatContainer.scrollHeight;
+                        }
 
-                            if (data.error) {
-                                throw new Error(data.error);
-                            }
-                        } catch (e) {
-                            if (e instanceof SyntaxError) continue; // partial SSE chunk, skip
-                            throw e;
+                        if (data.error) {
+                            throw new Error(data.error);
                         }
                     }
                 }
@@ -1024,6 +1026,7 @@
                 return true;
             } else if (cmd === '/clear') {
                 messages = [];
+                conversationId = crypto.randomUUID();
                 sessionStorage.removeItem('gpt1900_messages');
                 showWelcome();
                 return true;

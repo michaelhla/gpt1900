@@ -12,7 +12,7 @@ export default async function handler(req) {
         return new Response(JSON.stringify({ error: 'Backend not configured' }), { status: 500 });
     }
 
-    const { messages, temperature, max_tokens, top_k } = await req.json();
+    const { messages, temperature, max_tokens, top_k, conversation_id } = await req.json();
 
     // Forward real client IP for rate limiting
     const clientIp = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
@@ -32,7 +32,7 @@ export default async function handler(req) {
         backendResp = await fetch(`${BACKEND_URL}/chat/completions`, {
             method: 'POST',
             headers,
-            body: JSON.stringify({ messages, temperature, max_tokens, top_k }),
+            body: JSON.stringify({ messages, temperature, max_tokens, top_k, conversation_id }),
         });
     } catch (e) {
         return new Response(JSON.stringify({ error: 'Backend unavailable' }), { status: 502 });

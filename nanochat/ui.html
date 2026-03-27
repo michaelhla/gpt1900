@@ -283,6 +283,7 @@
         const sendButton = document.getElementById('sendButton');
 
         let messages = [];
+        let conversationId = crypto.randomUUID();
         let isGenerating = false;
         let currentTemperature = 0.8;
         let currentTopK = 50;
@@ -312,6 +313,7 @@
 
         function newConversation() {
             messages = [];
+            conversationId = crypto.randomUUID();
             chatWrapper.innerHTML = '';
             chatInput.value = '';
             chatInput.style.height = 'auto';
@@ -400,7 +402,8 @@
                         messages: messages,
                         temperature: currentTemperature,
                         top_k: currentTopK,
-                        max_tokens: 512
+                        max_tokens: 512,
+                        conversation_id: conversationId,
                     }),
                 });
 
