@@ -6,7 +6,7 @@
     <title>GPT-1900</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&family=IM+Fell+English:ital@0;1&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&family=IM+Fell+English:ital@0;1&family=Special+Elite&display=swap" rel="stylesheet">
     <style>
         :root {
             --cream: #FEFCF8;
@@ -38,10 +38,10 @@
             display: flex;
             flex-direction: column;
             background-image:
-                radial-gradient(ellipse at 20% 50%, rgba(210,180,140,0.12) 0%, transparent 50%),
-                radial-gradient(ellipse at 80% 20%, rgba(184,134,11,0.06) 0%, transparent 40%),
-                radial-gradient(ellipse at 50% 80%, rgba(139,115,85,0.08) 0%, transparent 45%),
-                linear-gradient(180deg, #FEFCF8 0%, #FBF7F0 50%, #F8F3EB 100%);
+                radial-gradient(ellipse at 20% 50%, rgba(210,180,140,0.06) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 20%, rgba(184,134,11,0.03) 0%, transparent 40%),
+                radial-gradient(ellipse at 50% 80%, rgba(139,115,85,0.04) 0%, transparent 45%),
+                linear-gradient(180deg, #FFFFFF 0%, #FEFCF8 50%, #FBF7F2 100%);
             background-attachment: fixed;
         }
 
@@ -53,45 +53,202 @@
             height: 100dvh;
         }
 
-        .chat-header {
-            padding: 1rem 1.5rem;
+        .chat-view.welcome-active {
+            justify-content: center;
+        }
+
+        .chat-view.welcome-active .chat-container {
+            flex: none;
+        }
+
+        .chat-view.welcome-active .chat-wrapper {
+            padding-bottom: 0.5rem;
+        }
+
+        .chat-view.welcome-active .input-area {
+            padding-top: 0.25rem;
+            padding-bottom: calc(2rem + env(safe-area-inset-bottom));
+        }
+
+        /* ── Welcome screen ─────────────────────────── */
+
+        .chat-container.welcome-state {
             display: flex;
             align-items: center;
-            gap: 1rem;
-            background: linear-gradient(180deg, var(--cream) 0%, rgba(254,252,248,0.85) 100%);
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-            border-bottom: 1px solid rgba(210,180,140,0.4);
-            z-index: 10;
+            justify-content: center;
+        }
+
+        .welcome-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            padding: 0.5rem 2rem;
+            animation: fadeIn 0.4s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .welcome-logo {
+            width: 200px;
+            height: 200px;
+            margin-bottom: -0.3rem;
+        }
+
+        .welcome-title {
+            font-family: 'Cormorant Garamond', 'Georgia', serif;
+            font-size: 1.9rem;
+            font-weight: 600;
+            color: var(--dark-brown);
+            letter-spacing: 0.03em;
+            margin-bottom: 0.3rem;
+        }
+
+        .welcome-subtitle {
+            font-family: 'Cormorant Garamond', 'Georgia', serif;
+            font-style: italic;
+            font-size: 1.05rem;
+            color: var(--brown);
+            margin-bottom: 0.6rem;
+        }
+
+        .welcome-description {
+            font-family: 'Cormorant Garamond', 'Georgia', serif;
+            font-size: 1rem;
+            color: var(--brown);
+            opacity: 0.65;
+            max-width: 36rem;
+            line-height: 1.6;
+        }
+
+        /* ── Chat header (shown during chat) ────────── */
+
+        .chat-nav {
+            display: none;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.75rem 1.5rem;
             flex-shrink: 0;
         }
 
-        .chat-header-info {
-            flex: 1;
-            min-width: 0;
+        .chat-nav.visible {
+            display: flex;
         }
 
-        .chat-header-info h2 {
-            font-family: 'Playfair Display', 'Georgia', serif;
-            font-size: 1.1rem;
+        .chat-nav-title {
+            font-family: 'Cormorant Garamond', 'Georgia', serif;
+            font-size: 1rem;
             font-weight: 500;
             color: var(--dark-brown);
-            letter-spacing: 0.04em;
+            letter-spacing: 0.03em;
         }
 
-        .chat-header-info .subtitle {
-            font-family: 'IM Fell English', serif;
-            font-style: italic;
-            font-size: 0.8rem;
+        .chat-nav-actions {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .nav-btn {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            border: 1px solid rgba(210,180,140,0.5);
+            background: transparent;
             color: var(--brown);
-            margin-top: 1px;
+            font-family: 'Cormorant Garamond', 'Georgia', serif;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
         }
 
-        .header-ornament {
-            font-size: 0.7rem;
-            color: var(--tan);
-            letter-spacing: 0.3em;
-            flex-shrink: 0;
+        .nav-btn:hover {
+            background: rgba(210,180,140,0.15);
+            border-color: var(--tan);
+        }
+
+        /* ── Info modal ────────────────────────────── */
+
+        .info-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(26,18,11,0.3);
+            z-index: 100;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.2s ease;
+        }
+
+        .info-overlay.visible {
+            display: flex;
+        }
+
+        .info-modal {
+            background: var(--cream);
+            border: 1px solid rgba(210,180,140,0.5);
+            border-radius: 1rem;
+            padding: 2rem;
+            max-width: 28rem;
+            width: 90%;
+            box-shadow: 0 8px 32px rgba(139,115,85,0.15);
+            animation: fadeIn 0.3s ease;
+        }
+
+        .info-modal-logo {
+            width: 80px;
+            height: 80px;
+            border-radius: 12px;
+            margin-bottom: 1rem;
+        }
+
+        .info-modal-title {
+            font-family: 'Cormorant Garamond', 'Georgia', serif;
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--dark-brown);
+            margin-bottom: 0.3rem;
+        }
+
+        .info-modal-subtitle {
+            font-family: 'Cormorant Garamond', 'Georgia', serif;
+            font-style: italic;
+            font-size: 0.9rem;
+            color: var(--brown);
+            margin-bottom: 1rem;
+        }
+
+        .info-modal-body {
+            font-family: 'Cormorant Garamond', 'Georgia', serif;
+            font-size: 1rem;
+            color: var(--ink-light);
+            line-height: 1.7;
+            margin-bottom: 1.2rem;
+        }
+
+        .info-modal-close {
+            display: block;
+            margin: 0 auto;
+            padding: 0.4rem 1.5rem;
+            border: 1px solid var(--tan);
+            border-radius: 2rem;
+            background: transparent;
+            color: var(--brown);
+            font-family: 'Cormorant Garamond', 'Georgia', serif;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .info-modal-close:hover {
+            background: rgba(210,180,140,0.15);
         }
 
         .chat-container {
@@ -126,26 +283,18 @@
 
         .message.assistant {
             justify-content: flex-start;
-            gap: 0.6rem;
             align-items: flex-start;
         }
 
-        .assistant-icon {
-            width: 28px;
-            height: 28px;
-            border: 1px solid var(--tan);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-            margin-top: 0.35rem;
-            background: linear-gradient(135deg, var(--cream), var(--paper));
-            color: var(--brown);
-            font-family: 'Playfair Display', serif;
-            font-size: 0.7rem;
-            font-weight: 600;
+        .trailing-icon {
+            width: 100px;
+            height: 100px;
+            display: block;
+            margin: 0.5rem 0 0.5rem;
+            object-fit: contain;
+            transition: transform 0.15s ease;
         }
+
 
         .message-content {
             white-space: pre-wrap;
@@ -157,15 +306,8 @@
 
         .message.assistant .message-content {
             background: transparent;
-            padding: 0.5rem 0.6rem;
-            cursor: pointer;
-            border-radius: 3px;
-            transition: background-color 0.2s ease;
+            padding: 0.2rem 0;
             color: var(--ink);
-        }
-
-        .message.assistant .message-content:hover {
-            background-color: rgba(210,180,140,0.12);
         }
 
         .message.user .message-content {
@@ -174,18 +316,11 @@
             border-radius: 1rem 1rem 0.25rem 1rem;
             padding: 0.7rem 1rem;
             max-width: 70%;
-            cursor: pointer;
-            transition: background 0.2s ease, border-color 0.2s ease;
             color: var(--ink);
         }
 
-        .message.user .message-content:hover {
-            background: linear-gradient(135deg, rgba(210,180,140,0.3), rgba(210,180,140,0.4));
-            border-color: rgba(210,180,140,0.5);
-        }
-
         .message.console .message-content {
-            font-family: 'IM Fell English', 'Georgia', serif;
+            font-family: 'Cormorant Garamond', 'Georgia', serif;
             font-size: 0.9rem;
             background: rgba(210,180,140,0.12);
             border: 1px solid rgba(210,180,140,0.25);
@@ -219,10 +354,9 @@
         }
 
         .input-area {
-            padding: 0.75rem 1rem;
-            padding-bottom: calc(0.75rem + env(safe-area-inset-bottom));
-            background: linear-gradient(0deg, var(--cream) 60%, rgba(254,252,248,0.85) 100%);
-            border-top: 1px solid rgba(210,180,140,0.3);
+            padding: 0.75rem 1.5rem;
+            padding-bottom: calc(1rem + env(safe-area-inset-bottom));
+            background: transparent;
             flex-shrink: 0;
         }
 
@@ -230,45 +364,87 @@
             max-width: 44rem;
             margin: 0 auto;
             display: flex;
-            gap: 0.6rem;
             align-items: flex-end;
+            background: rgba(254,252,248,0.85);
+            border: 1px solid rgba(210,180,140,0.45);
+            border-radius: 1.25rem;
+            padding: 0.4rem 0.5rem 0.4rem 1rem;
+            box-shadow: 0 2px 16px rgba(139,115,85,0.08), 0 1px 4px rgba(139,115,85,0.06);
+            transition: border-color 0.25s ease, box-shadow 0.25s ease;
+        }
+
+        .input-wrapper:focus-within {
+            border-color: var(--gold-muted);
+            box-shadow: 0 2px 20px rgba(139,115,85,0.12), 0 0 0 2px rgba(184,134,11,0.06);
         }
 
         .chat-input {
-            flex: 1;
-            padding: 0.75rem 1rem;
-            border: 1px solid var(--tan);
-            border-radius: 2px;
-            background: rgba(254,252,248,0.6);
+            width: 100%;
+            position: relative;
+            z-index: 1;
+            padding: 0.55rem 0.5rem;
+            border: none;
+            border-radius: 0;
+            background: transparent;
             color: var(--ink);
             font-family: 'Cormorant Garamond', 'Georgia', serif;
             font-size: 1.05rem;
             line-height: 1.5;
             resize: none;
             outline: none;
-            min-height: 48px;
+            min-height: 42px;
             max-height: 180px;
-            transition: border-color 0.25s ease, box-shadow 0.25s ease;
         }
 
         .chat-input::placeholder {
-            color: var(--brown);
-            opacity: 0.5;
-            font-style: italic;
+            color: transparent;
         }
 
-        .chat-input:focus {
-            border-color: var(--gold-muted);
-            box-shadow: 0 0 0 2px rgba(184,134,11,0.08);
-            background: rgba(254,252,248,0.85);
+        .input-field-wrap {
+            flex: 1;
+            position: relative;
+            min-height: 42px;
+        }
+
+        .placeholder-roller {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            padding: 0.55rem 0.5rem;
+            font-family: 'Cormorant Garamond', 'Georgia', serif;
+            font-size: 1.05rem;
+            font-style: italic;
+            line-height: 1.5;
+            color: var(--brown);
+            opacity: 0.5;
+            pointer-events: none;
+            overflow: hidden;
+            height: 42px;
+        }
+
+        .placeholder-roller span {
+            display: block;
+            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .placeholder-roller span.slide-out {
+            transform: translateY(-100%);
+            opacity: 0;
+        }
+
+        .placeholder-roller span.slide-in-prep {
+            transform: translateY(100%);
+            opacity: 0;
+            transition: none;
         }
 
         .send-btn {
             flex-shrink: 0;
-            width: 48px;
-            height: 48px;
-            border: 1px solid var(--dark-brown);
-            border-radius: 2px;
+            width: 38px;
+            height: 38px;
+            border: none;
+            border-radius: 50%;
             background: var(--dark-brown);
             color: var(--cream);
             cursor: pointer;
@@ -280,7 +456,6 @@
 
         .send-btn:hover:not(:disabled) {
             background: var(--darker-brown);
-            border-color: var(--darker-brown);
         }
 
         .send-btn:disabled {
@@ -289,17 +464,58 @@
         }
 
         .send-btn svg {
-            width: 18px;
-            height: 18px;
+            width: 16px;
+            height: 16px;
         }
 
-        .error-message {
-            background: rgba(139,37,0,0.08);
-            border: 1px solid rgba(139,37,0,0.2);
-            color: var(--red-accent);
-            padding: 0.6rem 0.9rem;
-            border-radius: 3px;
+        .single-turn-notice {
+            max-width: 44rem;
+            margin: 0 auto;
+            padding: 0.5rem 0.75rem;
+            background: rgba(210,180,140,0.12);
+            border: 1px solid rgba(210,180,140,0.25);
+            border-radius: 0.5rem;
+            font-family: 'Cormorant Garamond', 'Georgia', serif;
+            font-size: 0.9rem;
+            color: var(--ink-light);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.5rem;
+            animation: msgAppear 0.3s ease;
+        }
+
+        .single-turn-notice button {
+            background: none;
+            border: none;
+            color: var(--brown);
+            cursor: pointer;
+            font-size: 1rem;
+            line-height: 1;
+            padding: 0 0.2rem;
+            opacity: 0.6;
+        }
+
+        .single-turn-notice button:hover {
+            opacity: 1;
+        }
+
+        .message .message-content .error-message {
+            color: #C0392B;
             font-size: 0.95rem;
+            font-style: italic;
+        }
+
+        .input-footer {
+            text-align: center;
+            padding: 0.4rem 0 0;
+            font-family: 'Cormorant Garamond', 'Georgia', serif;
+            font-style: italic;
+            font-size: 0.75rem;
+            color: var(--brown);
+            opacity: 0.45;
+            max-width: 44rem;
+            margin: 0 auto;
         }
 
         /* ── Responsive ─────────────────────────────────── */
@@ -312,29 +528,40 @@
 <body>
 
     <!-- ── Chat Interface ───────────────────────── -->
-    <div class="chat-view" id="chatView">
-        <div class="chat-header">
-            <div class="chat-header-info">
-                <h2>GPT-1900</h2>
-                <div class="subtitle">Anno Domini</div>
+    <div class="chat-view welcome-active" id="chatView">
+        <div class="chat-nav" id="chatNav">
+            <span class="chat-nav-title" onclick="clearConversation()" style="cursor:pointer;">GPT-1900</span>
+            <div class="chat-nav-actions">
+                <button class="nav-btn" onclick="clearConversation()" title="New conversation">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 5v14"/><path d="M5 12h14"/>
+                    </svg>
+                </button>
+                <button class="nav-btn" onclick="toggleInfo()" title="What is this?">?</button>
             </div>
-            <span class="header-ornament">&diams;&thinsp;&diams;&thinsp;&diams;</span>
         </div>
-
-        <div class="chat-container" id="chatContainer">
+        <div class="chat-container welcome-state" id="chatContainer">
             <div class="chat-wrapper" id="chatWrapper">
+                <div class="welcome-content" id="welcomeContent">
+                    <img src="/icon.png" alt="GPT-1900" class="welcome-logo">
+                    <div class="welcome-title">GPT-1900</div>
+                    <div class="welcome-description">A language model trained exclusively on text from before 1900 — books, newspapers, letters, and scholarship from the nineteenth century and earlier.</div>
+                </div>
             </div>
         </div>
 
         <div class="input-area">
             <div class="input-wrapper">
-                <textarea
-                    id="chatInput"
-                    class="chat-input"
-                    placeholder="Compose your enquiry..."
-                    rows="1"
-                    onkeydown="handleKeyDown(event)"
-                ></textarea>
+                <div class="input-field-wrap">
+                    <div class="placeholder-roller" id="placeholderRoller"><span></span></div>
+                    <textarea
+                        id="chatInput"
+                        class="chat-input"
+                        placeholder=""
+                        rows="1"
+                        onkeydown="handleKeyDown(event)"
+                    ></textarea>
+                </div>
                 <button id="sendButton" class="send-btn" onclick="sendMessage()" disabled>
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M5 12h14"/>
@@ -342,6 +569,20 @@
                     </svg>
                 </button>
             </div>
+            <div class="input-footer">Research preview only. Views expressed by GPT-1900 do not reflect those of its authors.</div>
+        </div>
+    </div>
+
+    <!-- ── Info Modal ─────────────────────────── -->
+    <div class="info-overlay" id="infoOverlay" onclick="toggleInfo()">
+        <div class="info-modal" onclick="event.stopPropagation()">
+            <img src="/icon.png" alt="GPT-1900" class="info-modal-logo">
+            <div class="info-modal-title">GPT-1900</div>
+            <div class="info-modal-body">
+                GPT-1900 is an experimental language model trained exclusively on text published before the year 1900 — books, newspapers, letters, and scholarship from the nineteenth century and earlier.<br><br>
+                Its responses reflect the knowledge, language, and perspectives of that era. It does not know about modern events, technology, or cultural developments.
+            </div>
+            <button class="info-modal-close" onclick="toggleInfo()">Close</button>
         </div>
     </div>
 
@@ -350,11 +591,206 @@
         const chatWrapper = document.getElementById('chatWrapper');
         const chatInput = document.getElementById('chatInput');
         const sendButton = document.getElementById('sendButton');
+        const chatNav = document.getElementById('chatNav');
+        const infoOverlay = document.getElementById('infoOverlay');
 
         let messages = [];
         let isGenerating = false;
         let currentTemperature = 0.8;
         let currentTopK = 50;
+
+        function saveSession() {
+            sessionStorage.setItem('gpt1900_messages', JSON.stringify(messages));
+        }
+
+        function loadSession() {
+            try {
+                const saved = sessionStorage.getItem('gpt1900_messages');
+                if (saved) {
+                    messages = JSON.parse(saved);
+                    if (messages.length > 0) {
+                        hideWelcome();
+                        messages.forEach(m => addMessage(m.role, m.content));
+                    }
+                }
+            } catch (e) { /* ignore corrupt data */ }
+        }
+
+        /* ── Info modal ─────────────────────────── */
+
+        function clearConversation() {
+            messages = [];
+            sessionStorage.removeItem('gpt1900_messages');
+            showWelcome();
+        }
+
+        function toggleInfo() {
+            infoOverlay.classList.toggle('visible');
+        }
+
+        /* ── Welcome screen ──────────────────────── */
+
+        function showWelcome() {
+            chatWrapper.innerHTML = `
+                <div class="welcome-content" id="welcomeContent">
+                    <img src="/icon.png" alt="GPT-1900" class="welcome-logo">
+                    <div class="welcome-title">GPT-1900</div>
+                    <div class="welcome-description">A language model trained exclusively on text from before 1900 — books, newspapers, letters, and scholarship from the nineteenth century and earlier.</div>
+                </div>
+            `;
+            chatContainer.classList.add('welcome-state');
+            document.getElementById('chatView').classList.add('welcome-active');
+            chatNav.classList.remove('visible');
+            startPlaceholderCycle();
+            startIdleAnimation();
+            const existingNotice = document.querySelector('.single-turn-notice');
+            if (existingNotice) existingNotice.remove();
+        }
+
+        function showSingleTurnNotice() {
+            if (document.querySelector('.single-turn-notice')) return;
+            const notice = document.createElement('div');
+            notice.className = 'single-turn-notice';
+            notice.innerHTML = '<span>Single-turn only — each question is answered independently without context from previous messages.</span><button onclick="this.parentElement.remove()" title="Dismiss">&times;</button>';
+            const inputArea = document.querySelector('.input-area');
+            inputArea.parentElement.insertBefore(notice, inputArea);
+        }
+
+        function hideWelcome() {
+            const welcome = document.getElementById('welcomeContent');
+            if (welcome) {
+                chatWrapper.innerHTML = '';
+                chatContainer.classList.remove('welcome-state');
+                document.getElementById('chatView').classList.remove('welcome-active');
+                chatNav.classList.add('visible');
+                stopPlaceholderCycle();
+                stopIdleAnimation();
+                showSingleTurnNotice();
+            }
+        }
+
+        /* ── Cycling placeholder questions ───────── */
+
+        const sampleQuestions = [
+            'Explain the properties of the luminiferous aether.',
+            'What are Newton\'s laws of motion?',
+            'Describe Maxwell\'s theory of electromagnetism.',
+            'What experiments has Mr. Faraday conducted?',
+            'How does the telegraph operate?',
+            'What is the nature of heat and thermodynamics?',
+            'Tell me about the expansion of the American railways.',
+            'What is Mr. Darwin\'s theory of natural selection?',
+            'Describe the political situation in Europe.',
+            'What do we know of the planet Mars?',
+            'How is steel manufactured by the Bessemer process?',
+            'What are the causes of cholera?',
+            'Tell me about the works of Mr. Dickens.',
+            'What is the kinetic theory of gases?',
+            'Describe the French Revolution and its consequences.',
+            'What progress has been made in electrical lighting?',
+            'Explain Lord Kelvin\'s views on the age of the Earth.',
+            'What are the latest astronomical observations?',
+        ];
+
+        let placeholderIndex = 0;
+        let placeholderInterval = null;
+        const roller = document.getElementById('placeholderRoller');
+        const rollerSpan = roller.querySelector('span');
+
+        function setRollerText(text) {
+            rollerSpan.textContent = text;
+        }
+
+        function cyclePlaceholder() {
+            if (chatInput.value) return;
+            const nextIndex = (placeholderIndex + 1) % sampleQuestions.length;
+            // Slide current text up and out
+            rollerSpan.classList.add('slide-out');
+            setTimeout(() => {
+                // Prep new text below
+                rollerSpan.classList.remove('slide-out');
+                rollerSpan.classList.add('slide-in-prep');
+                setRollerText(sampleQuestions[nextIndex]);
+                // Force reflow then slide in
+                rollerSpan.offsetHeight;
+                rollerSpan.classList.remove('slide-in-prep');
+            }, 600);
+            placeholderIndex = nextIndex;
+        }
+
+        function updateRollerVisibility() {
+            roller.style.display = chatInput.value ? 'none' : '';
+        }
+
+        function startPlaceholderCycle() {
+            placeholderIndex = Math.floor(Math.random() * sampleQuestions.length);
+            setRollerText(sampleQuestions[placeholderIndex]);
+            roller.style.display = '';
+            rollerSpan.className = '';
+            if (placeholderInterval) clearInterval(placeholderInterval);
+            placeholderInterval = setInterval(cyclePlaceholder, 8000);
+        }
+
+        function stopPlaceholderCycle() {
+            if (placeholderInterval) {
+                clearInterval(placeholderInterval);
+                placeholderInterval = null;
+            }
+            setRollerText('What would you ask someone from 1900?');
+            rollerSpan.className = '';
+        }
+
+        /* ── Welcome idle states ─────────────────── */
+
+        let idleTimeout = null;
+        let idleActive = false;
+
+        const idleStates = [
+            '/icon-newspaper.png',  // reading
+            '/icon-cigar.png',      // smoking
+            '/icon-sleep.png',      // sleeping
+        ];
+
+        function idleLoop() {
+            if (!idleActive) return;
+            const logo = document.querySelector('.welcome-logo');
+            if (!logo) return;
+            // Pick a random idle state
+            const state = idleStates[Math.floor(Math.random() * idleStates.length)];
+            logo.src = state;
+            // Hold for 3 seconds, then go back to normal
+            idleTimeout = setTimeout(() => {
+                if (!idleActive) return;
+                logo.src = '/icon.png';
+                // Wait 3 seconds before next idle
+                idleTimeout = setTimeout(idleLoop, 3000);
+            }, 3000);
+        }
+
+        function startIdleAnimation() {
+            idleActive = true;
+            // First idle after 3 seconds
+            idleTimeout = setTimeout(idleLoop, 3000);
+        }
+
+        function stopIdleAnimation() {
+            idleActive = false;
+            if (idleTimeout) {
+                clearTimeout(idleTimeout);
+                idleTimeout = null;
+            }
+            const logo = document.querySelector('.welcome-logo');
+            if (logo) logo.src = '/icon.png';
+        }
+
+        /* ── Chat icon state management ─────────── */
+
+        function setChatIcon(src) {
+            const icon = chatWrapper.querySelector('.trailing-icon');
+            if (icon) icon.src = src;
+        }
+
+        startPlaceholderCycle();
 
         /* ── Input handling ───────────────────────── */
 
@@ -362,6 +798,7 @@
             this.style.height = 'auto';
             this.style.height = Math.min(this.scrollHeight, 180) + 'px';
             sendButton.disabled = !this.value.trim() || isGenerating;
+            updateRollerVisibility();
         });
 
         function handleKeyDown(event) {
@@ -373,66 +810,100 @@
 
         /* ── Messages ─────────────────────────────── */
 
+        let talkingTimeout = null;
+        let isTalking = false;
+
+        const talkFrames = [
+            // [src, scaleY, scaleX, baseDuration]
+            // A = closed, B = mid, C = wide
+            ['/icon.png',         1,    1,     200],  // A
+            ['/icon-talking.png', 0.98, 1.01,  140],  // B
+            ['/icon-open.png',    0.96, 1.02,  170],  // C
+            ['/icon-talking.png', 0.98, 1.01,  140],  // B
+            ['/icon.png',         1,    1,     200],  // A
+        ];
+
+        // Occasional variations: skip to C, hold A longer, double B
+        const talkPatterns = [
+            [0,1,2,3,4],         // A B C B A (standard)
+            [0,1,2,3,4,4],       // A B C B A A (pause)
+            [0,1,2,1,4],         // A B C B A (standard)
+            [0,1,0,1,2,3,4],     // A B A B C B A (stutter)
+            [0,1,2,2,3,4],       // A B C C B A (hold open)
+        ];
+
+        function runTalkFrame(icon, pattern, idx) {
+            if (!isTalking) return;
+            const frameIdx = pattern[idx % pattern.length];
+            const [src, sy, sx, baseDur] = talkFrames[frameIdx];
+            icon.src = src;
+            icon.style.transform = `scaleY(${sy}) scaleX(${sx})`;
+            // Add ±20ms randomness
+            const dur = baseDur + Math.floor(Math.random() * 40) - 20;
+            const nextIdx = idx + 1;
+            // Pick a new random pattern when current one completes
+            if (nextIdx >= pattern.length) {
+                const newPattern = talkPatterns[Math.floor(Math.random() * talkPatterns.length)];
+                talkingTimeout = setTimeout(() => runTalkFrame(icon, newPattern, 0), dur);
+            } else {
+                talkingTimeout = setTimeout(() => runTalkFrame(icon, pattern, nextIdx), dur);
+            }
+        }
+
+        function startTalkingAnimation() {
+            const icon = chatWrapper.querySelector('.trailing-icon');
+            if (!icon) return;
+            isTalking = true;
+            const pattern = talkPatterns[Math.floor(Math.random() * talkPatterns.length)];
+            runTalkFrame(icon, pattern, 0);
+        }
+
+        function stopTalkingAnimation() {
+            isTalking = false;
+            if (talkingTimeout) {
+                clearTimeout(talkingTimeout);
+                talkingTimeout = null;
+            }
+            const icon = chatWrapper.querySelector('.trailing-icon');
+            if (icon) {
+                icon.src = '/icon.png';
+                icon.style.transform = '';
+            }
+        }
+
+        function moveTrailingIcon() {
+            // Remove any existing trailing icon
+            const existing = chatWrapper.querySelector('.trailing-icon');
+            if (existing) existing.remove();
+            // Add icon after the last assistant message
+            const assistantMsgs = chatWrapper.querySelectorAll('.message.assistant');
+            if (assistantMsgs.length > 0) {
+                const last = assistantMsgs[assistantMsgs.length - 1];
+                const icon = document.createElement('img');
+                icon.className = 'trailing-icon';
+                icon.src = '/icon.png';
+                icon.alt = '';
+                last.after(icon);
+            }
+        }
+
         function addMessage(role, content, messageIndex) {
             const messageDiv = document.createElement('div');
             messageDiv.className = `message ${role}`;
-
-            if (role === 'assistant') {
-                const icon = document.createElement('div');
-                icon.className = 'assistant-icon';
-                icon.textContent = 'G';
-                messageDiv.appendChild(icon);
-            }
 
             const contentDiv = document.createElement('div');
             contentDiv.className = 'message-content';
             contentDiv.textContent = content;
 
-            if (role === 'user' && messageIndex !== undefined) {
-                contentDiv.setAttribute('title', 'Click to edit');
-                contentDiv.addEventListener('click', () => {
-                    if (!isGenerating) editMessage(messageIndex);
-                });
-            }
-
-            if (role === 'assistant' && messageIndex !== undefined) {
-                contentDiv.setAttribute('title', 'Click to regenerate');
-                contentDiv.addEventListener('click', () => {
-                    if (!isGenerating) regenerateMessage(messageIndex);
-                });
-            }
-
             messageDiv.appendChild(contentDiv);
             chatWrapper.appendChild(messageDiv);
+
+            if (role === 'assistant') {
+                moveTrailingIcon();
+            }
+
             chatContainer.scrollTop = chatContainer.scrollHeight;
             return contentDiv;
-        }
-
-        function editMessage(messageIndex) {
-            if (messageIndex < 0 || messageIndex >= messages.length) return;
-            if (messages[messageIndex].role !== 'user') return;
-
-            chatInput.value = messages[messageIndex].content;
-            chatInput.style.height = 'auto';
-            chatInput.style.height = Math.min(chatInput.scrollHeight, 180) + 'px';
-
-            messages = messages.slice(0, messageIndex);
-            const all = chatWrapper.querySelectorAll('.message');
-            for (let i = messageIndex; i < all.length; i++) all[i].remove();
-
-            sendButton.disabled = false;
-            chatInput.focus();
-        }
-
-        async function regenerateMessage(messageIndex) {
-            if (messageIndex < 0 || messageIndex >= messages.length) return;
-            if (messages[messageIndex].role !== 'assistant') return;
-
-            messages = messages.slice(0, messageIndex);
-            const all = chatWrapper.querySelectorAll('.message');
-            for (let i = messageIndex; i < all.length; i++) all[i].remove();
-
-            await generateAssistantResponse();
         }
 
         /* ── Streaming generation ─────────────────── */
@@ -443,6 +914,7 @@
 
             const assistantContent = addMessage('assistant', '');
             assistantContent.innerHTML = '<span class="typing-indicator"><span></span><span></span><span></span></span>';
+            setChatIcon('/icon-thinking.png');
 
             try {
                 const response = await fetch('/api/chat', {
@@ -481,6 +953,7 @@
                                 if (!started) {
                                     assistantContent.textContent = '';
                                     started = true;
+                                    startTalkingAnimation();
                                 }
                                 fullResponse += data.token;
                                 assistantContent.textContent = fullResponse;
@@ -499,17 +972,20 @@
 
                 const idx = messages.length;
                 messages.push({ role: 'assistant', content: fullResponse });
-
-                assistantContent.setAttribute('title', 'Click to regenerate');
-                assistantContent.addEventListener('click', () => {
-                    if (!isGenerating) regenerateMessage(idx);
-                });
+                saveSession();
+                setChatIcon('/icon.png');
 
             } catch (error) {
-                assistantContent.innerHTML = `<div class="error-message">${error.message}</div>`;
+                const errorMsg = 'GPT-1900 is busy, please try again later.';
+                assistantContent.innerHTML = `<div class="error-message">${errorMsg}</div>`;
+                messages.push({ role: 'assistant', content: errorMsg });
+                saveSession();
+                const errorIcons = ['/icon-sleep.png', '/icon-newspaper.png'];
+                setChatIcon(errorIcons[Math.floor(Math.random() * errorIcons.length)]);
             } finally {
                 isGenerating = false;
                 sendButton.disabled = !chatInput.value.trim();
+                stopTalkingAnimation();
             }
         }
 
@@ -548,7 +1024,8 @@
                 return true;
             } else if (cmd === '/clear') {
                 messages = [];
-                chatWrapper.innerHTML = '';
+                sessionStorage.removeItem('gpt1900_messages');
+                showWelcome();
                 return true;
             } else if (cmd === '/help') {
                 addMessage('console',
@@ -579,13 +1056,18 @@
             chatInput.value = '';
             chatInput.style.height = 'auto';
 
+            hideWelcome();
+
             const idx = messages.length;
             messages.push({ role: 'user', content: message });
+            saveSession();
             addMessage('user', message, idx);
 
             await generateAssistantResponse();
         }
 
+        loadSession();
+        if (document.querySelector('.welcome-logo')) startIdleAnimation();
         chatInput.focus();
         sendButton.disabled = false;
     </script>
