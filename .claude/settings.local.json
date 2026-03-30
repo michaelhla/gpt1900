@@ -45,7 +45,26 @@
       "Bash(ps aux:*)",
       "Bash(ps -p 2715749 -o pid,etime,cmd --no-headers)",
       "Read(//opt/dlami/nvme/gpt1964_training/**)",
-      "Bash(sleep:*)"
+      "Bash(sleep:*)",
+      "Bash(PYENV_VERSION=3.12.6 python -c \"from huggingface_hub import HfApi; api = HfApi\\(\\); repos = api.list_models\\(author='mhla', search='gpt1900'\\); [print\\(f'{r.id:50s}  {r.last_modified}'\\) for r in repos]\")",
+      "Bash(aws ec2:*)",
+      "mcp__playwright__browser_take_screenshot",
+      "mcp__playwright__browser_type",
+      "mcp__playwright__browser_navigate",
+      "mcp__playwright__browser_click",
+      "mcp__playwright__browser_snapshot",
+      "mcp__playwright__browser_press_key",
+      "mcp__playwright__browser_evaluate",
+      "WebFetch(domain:arxiv.org)",
+      "Bash(python:*)",
+      "Bash(cp monocleman.png deploy/vercel/public/icon.png)",
+      "Bash(cp monocleman_cigar_transparent.png deploy/vercel/public/icon-cigar.png)",
+      "Bash(cp monocleman_cleanalseep.png deploy/vercel/public/icon-sleep.png)",
+      "Bash(cp monocleman_thinking_clean.png deploy/vercel/public/icon-thinking.png)",
+      "Bash(cp monocleman_talking.png deploy/vercel/public/icon-talking.png)",
+      "Bash(git mv:*)",
+      "Bash(curl -s \"https://huggingface.co/api/models?author=mhla&search=gpt1915\")",
+      "Bash(curl -s \"https://huggingface.co/api/models?author=mhla&search=gpt1964\")"
     ]
   }
 }

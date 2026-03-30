@@ -200,6 +200,13 @@ async def stream_from_queue(output_queue: asyncio.Queue, tokenizer, request_id: 
                 yield f"data: {json.dumps({'token': new_text}, ensure_ascii=False)}\n\n"
                 last_clean_text = current_text
 
+    # Flush any remaining tokens buffered due to incomplete UTF-8
+    if accumulated_tokens:
+        final_text = tokenizer.decode(accumulated_tokens)
+        remaining = final_text[len(last_clean_text):]
+        if remaining and remaining != '\ufffd':
+            yield f"data: {json.dumps({'token': remaining.replace('\ufffd', '')}, ensure_ascii=False)}\n\n"
+
 
 @app.post("/chat/completions")
 async def chat_completions(request: ChatRequest):

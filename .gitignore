@@ -22,3 +22,8 @@ dask-*
 results/*/hf_cache/
 *.log
 runs/*.log
+
+# Prevent stray images at repo root
+/*.png
+/*.jpg
+/*.jpeg

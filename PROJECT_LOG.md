@@ -19,6 +19,7 @@ A comprehensive record of every checkpoint, dataset, training run, and experimen
 11. [Evaluation Results](#11-evaluation-results)
 12. [Infrastructure & Architecture Experiments](#12-infrastructure--architecture-experiments)
 13. [Deployment](#13-deployment)
+14. [HuggingFace Repos](#14-huggingface-repos)
 
 ---
 
@@ -1137,23 +1138,60 @@ Chronological summary from `dev/LOG.md`. All experiments tested at d12-d26 scale
 
 **Hyperparameters are scale-dependent:** Elaborate fine-tuning at d12 actively hurts at d20. Only x0_beta1=0.96 survived validation at target scale.
 
+### Serving Infrastructure (Mar 2026)
+
+| Date | Component | Description |
+|---|---|---|
+| 2026-03-25 | **Continuous Batching Engine** (`nanochat/batch_engine.py`) | Async scheduler for prefilling + batched decode across concurrent requests. KVCacheView (slot-based KV cache pool), request swapping. |
+| 2026-03-25 | **Flash Attention 3 Wrapper** (`nanochat/flash_attention.py`) | FA3 on Hopper+ with automatic SDPA fallback for older GPUs, CPU, and MPS. |
+| 2026-03-26 | **TTFT Timeout + Request Cancellation** (`scripts/chat_web_batch.py`) | 20-second timeout for first token, graceful cancellation of in-flight requests. |
+| 2026-03-29 | **SQLite Chat Logger** (`nanochat/chat_logger.py`) | Request/response persistence with conversation filtering, time-range queries, pagination. |
+
 ---
 
 ## 13. Deployment
 
+### Serving Infrastructure
+
+**Continuous Batching Server** (`scripts/chat_web_batch.py`, added Mar 2026):
+- FastAPI server using `nanochat/batch_engine.py` for async continuous batching
+- One process per GPU, each handling many concurrent requests
+- Endpoints: `POST /chat/completions` (SSE streaming), `GET /health`, `GET /stats`
+- Features: TTFT timeout (20s), request cancellation, single-turn mode, API key auth
+
+**Multi-GPU Orchestration** (`scripts/launch_serving.sh`):
+- Launches one `chat_web_batch.py` process per GPU (ports 8001-800N)
+- Generates nginx config dynamically for load balancing on port 80
+- Least-conn upstream selection, rate limiting (10 req/s per IP, burst 20, max 4 concurrent)
+- API key authentication via `BACKEND_API_KEY` env var
+
+**Data Parallelism Server** (`scripts/chat_web.py`):
+- Older approach: copies model to N GPUs, distributes requests round-robin
+- Each request runs on its own GPU sequentially
+- Supports same endpoints as batch server
+
+**Chat Logger** (`nanochat/chat_logger.py`, added Mar 2026):
+- SQLite request/response logging with indexed queries
+- Schema: conversation_id, messages_json, response_text, temperature, latency_ms, client_ip, GPU tracking
+- Supports conversation filtering, time-range queries, pagination
+
 ### RunPod Serverless (`deploy/runpod/`)
 - `Dockerfile`: Inference container
 - `Dockerfile.train`: Training container
-- `handler.py`: Serverless request handler
+- `handler.py`: Serverless request handler (generator-style, streaming via RunPod protocol)
 - `download_model.py`: Model download on cold start
 
 ### AWS SageMaker (`deploy/sagemaker/`)
 - `entry_point.sh`: SageMaker entry point for training/inference
 
 ### Vercel Frontend (`deploy/vercel/`)
-- `api/chat.js`: Chat API endpoint (Node.js)
-- `public/index.html`: ChatGPT-like web UI
-- `vercel.json`, `package.json`: Deployment config
+- `api/chat.js`: Edge Runtime chat endpoint — forwards to self-hosted `BACKEND_URL` with API key auth
+- `public/index.html`: Web UI with vintage 19th-century aesthetic, animated "monocle man" mascot with multiple character states (thinking, talking, sleeping, writing, etc.), welcome screen with suggested prompts
+- `vercel.json`, `package.json`: Deployment config (no build step, static HTML)
+- Redesigned Mar 2026 (commit 76e6e14)
+
+### Nginx (`deploy/nginx/`)
+- `nanochat.conf`: Reverse proxy config template (rate limiting, connection limits, API key validation)
 
 ### Cloud Providers
 - **Lambda Labs**: Primary GPU provider for training (H100 8×GPU nodes)
@@ -1166,66 +1204,113 @@ Chronological summary from `dev/LOG.md`. All experiments tested at d12-d26 scale
 
 ---
 
+## 14. HuggingFace Repos
+
+### Model Checkpoints
+
+| HF Repo | Type | Description |
+|---|---|---|
+| `mhla/gpt1900-d26` | Base | d26 base model |
+| `mhla/gpt1900-d26-8btok` | Base | d26, 8B tokens |
+| `mhla/gpt1900-d26-22btok` | Base | d26, 22B tokens |
+| `mhla/gpt1900-d34-8b-subset` | Base | d34, 8B tokens (subset) |
+| `mhla/gpt1900-d34-22btok` | Base | d34, 22B tokens (MAIN BASE) |
+| `mhla/gpt1900-d34-physics-sft` | CLM | d34 + physics CLM (pre-1900 only) |
+| `mhla/gpt1900-d34-physicssft-expanded` | CLM | d34 + physics CLM (pre+post-1900 texts) |
+| `mhla/gpt1900-d34-physics-clm-pre1900` | CLM | Physics CLM intermediate |
+| `mhla/gpt1900-d34-sft-period` | SFT | Period-style instruction pairs |
+| `mhla/gpt1900-d34-sft-modern` | SFT | Modern-style instruction pairs |
+| `mhla/gpt1900-d34-sft-dialogue` | SFT | Dialogue SFT |
+| `mhla/gpt1900-d34-dialogue-sft` | SFT | Dialogue SFT variant |
+| `mhla/gpt1900-d34-dialogue-sft-v2` | SFT | Dialogue SFT v2 |
+| `mhla/gpt1900-d34-dialogue-sft-v3` | SFT | Dialogue SFT v3 |
+| `mhla/gpt1900-d34-reasoning-sft-v1` | SFT | Reasoning SFT v1 |
+| `mhla/gpt1900-d34-reasoning-sft-v2` | SFT | Reasoning SFT v2 |
+| `mhla/gpt1900-d34-reasoning-sft-v3` | SFT | Reasoning SFT v3 |
+| `mhla/gpt1900-d34-reasoning-sft-v4` | SFT | Reasoning SFT v4 |
+| `mhla/gpt1900-d34-r1-reasoning-sft` | SFT | R1 distillation SFT |
+| `mhla/gpt1900-d34-v3-sft` | SFT | V3 corpus SFT |
+| `mhla/gpt1900-d34-v3-sft-physics` | SFT | V3 SFT on physics base (safe) |
+| `mhla/gpt1900-d34-v3-sft-physics-full` | SFT | V3 SFT on physics base (full) |
+| `mhla/gpt1900-instruct` | SFT | Instruct model (early) |
+| `mhla/gpt1900-instruct-base-sft` | SFT | Instruct base SFT |
+| `mhla/gpt1900-instruct-base-sft-deconfessed` | SFT | Instruct base (deconfessed) |
+| `mhla/gpt1900-instruct-physics-sft` | SFT | Instruct physics SFT |
+| `mhla/gpt1900-instruct-v3-sft` | SFT | **Instruct v3 SFT (recommended for chat)** |
+| `mhla/gpt1900-d34-coherence-rl` | RL | Coherence RL |
+| `mhla/gpt1900-d34-discovery-rl-v1` | RL | Discovery RL v1 |
+| `mhla/gpt1900-d34-discovery-rl-v2` | RL | Discovery RL v2 |
+| `mhla/gpt1900-d34-discovery-rl-v3` | RL | Discovery RL v3 |
+| `mhla/gpt1900-d34-discovery-rl-v4` | RL | Discovery RL v4 |
+| `mhla/gpt1900-d34-discovery-rl-v6` | RL | Discovery RL v6 |
+| `mhla/gpt1900-d34-contradiction-rl-v6` | RL | Contradiction RL v6 (eval: 0.58) |
+| `mhla/gpt1900-d34-contradiction-rl-v7` | RL | Contradiction RL v7 |
+| `mhla/gpt1900-d34-contradiction-rl-v8` | RL | Contradiction RL v8 (eval: 0.62) |
+| `mhla/gpt1900-d34-contradiction-rl-v9` | RL | Contradiction RL v9 |
+| `mhla/gpt1900-d34-contradiction-rl-v11` | RL | **Contradiction RL v11 (eval: 1.25, BEST)** |
+| `mhla/gpt1900-d34-contradiction-rl-v12` | RL | Contradiction RL v12 (R1 base) |
+| `mhla/gpt1900-d34-gen-physics-rl` | RL | Generated physics RL |
+| `mhla/gpt1900-d34-intuitor-rl` | RL | Intuitor RL (self-certainty) |
+| `mhla/gpt1900-d34-math-rl` | RL | Math RL (GSM8K + MATH) |
+| `mhla/gpt1900-d34-discovery-rl-1900` | RL | Discovery RL 1900 pipeline |
+| `mhla/gpt1900-d34-v3-sft-physics-1900-rl` | RL | V3 SFT physics → 1900 RL |
+| `mhla/gpt1905-d34` | Base | Pre-1905 d34 base model |
+| `mhla/gpt1964-d34` | Base | 1900-1964 d34 base model |
+| `mhla/pre1900_d26_22btok_2epoch` | Base | d26 22B tokens, 2 epochs |
+
+### Datasets
+
+| HF Repo | Description |
+|---|---|
+| `mhla/pre1900-corpus` | Pre-1900 text corpus (HathiTrust, BL, AmericanStories) |
+| `mhla/pre1900-training` | Tokenized pre-1900 training data |
+| `mhla/pre1915-corpus` | Pre-1915 text corpus |
+| `mhla/pre1964-corpus` | Pre-1964 text corpus |
+| `mhla/gpt1900-physics-data` | Physics books and texts |
+| `mhla/gpt1900-physics-clm` | Physics CLM training data |
+| `mhla/gpt1900-instruct-data` | Instruction pairs (early versions) |
+| `mhla/gpt1900-instruct-v3-data` | V3 instruction data (cleaned, opinion-filtered) |
+| `mhla/pre1900-verifiable-physics` | Verifiable physics problems (SymPy) |
+| `mhla/gpt1900-contradiction-eval` | Contradiction evaluation data |
+
+---
+
 ## Run Scripts Index
 
-All located in `runs/`:
+Active scripts in `runs/` (older versions moved to `runs/archive/`):
 
 | Script | Purpose |
 |---|---|
-| **Pretraining** | |
-| `run_pre1900.sh` | Pre-1900 base (original) |
-| `run_pre1900_d34.sh` | Pre-1900 d34 (8-node, FP8) |
-| `run_pre1900_d34_continued.sh` | Continue pre-1900 d34 |
-| `run_pre1900_d45.sh` | Pre-1900 d45 (8-node) |
-| `run_pre1905_d34.sh` | Pre-1905 d34 |
-| `run_pre1905_clean.sh` | Pre-1905 cleaned data |
-| `run_pre1915_d40.sh` | Pre-1915 d40 (8-node) |
-| `run_pre1915_d42.sh` | Pre-1915 d42 (8-node) |
-| `run_pre1915_7b_fsdp.sh` | Pre-1915 7B (FSDP) |
-| `run_1900_1964_d34.sh` | 1900-1964 d34 |
-| `run_1900_1964_full_pipeline.sh` | Full 1964 pipeline |
-| **Physics CLM** | |
-| `run_physics_clm_d34.sh` | Physics CLM (pre-1900 only) |
-| `run_physics_clm_d34_expanded.sh` | Physics CLM (+ post-1900) |
+| **Infrastructure** | |
+| `chat.sh` | Download model from HF + launch interactive chat or generation |
+| `interactive_pod.py` | Interactive GPU pod management |
+| `launch_ec2.py` | Launch AWS EC2 instances |
+| `launch_runpod.py` | Launch RunPod pods |
+| `launch_sagemaker.py` | Launch SageMaker training jobs |
 | **SFT** | |
-| `run_pre1900_sft.sh` | Full SFT pipeline (generate → craft → filter → train) |
-| `run_reasoning_sft.sh` | Reasoning SFT v1 |
-| `run_reasoning_sft_v2.sh` | Reasoning SFT v2 |
-| `run_reasoning_sft_v3.sh` | Reasoning SFT v3 |
-| `run_reasoning_sft_v4.sh` | Reasoning SFT v4 |
-| `run_reasoning_sft_v5.sh` | Reasoning SFT v5 |
+| `run_reasoning_sft_v5.sh` | Reasoning SFT v5 (latest) |
 | `run_v3_sft_full.sh` | V3 SFT (full corpus) |
 | `run_v3_sft_safe.sh` | V3 SFT (opinion-filtered) |
 | `run_v3_sft_physics_base.sh` | V3 SFT on physics base |
 | `run_v3_sft_physics_full.sh` | V3 SFT on physics (full) |
 | `run_corpus_sft.sh` | Corpus-based SFT |
-| `run_sft_stages2_4.sh` | SFT stages 2-4 |
-| `run_generated_physics_sft.sh` | Generated physics SFT |
+| `run_openthoughts_sft.sh` | OpenThoughts SFT (prepare + train on physics-expanded base) |
 | **RL** | |
-| `run_pre1900_rl.sh` | Pre-1900 RL chain |
-| `run_discovery_rl.sh` | Discovery RL v2 |
-| `run_discovery_rl_v3.sh` | Discovery RL v3 |
-| `run_discovery_rl_v4.sh` | Discovery RL v4 |
-| `run_discovery_rl_v5.sh` | Discovery RL v5 |
-| `run_contradiction_rl_v5.sh` | Contradiction RL v5 |
-| `run_contradiction_rl_v6.sh` | Contradiction RL v6 |
-| `run_contradiction_rl_v7.sh` | Contradiction RL v7 |
-| `run_contradiction_rl_v8.sh` | Contradiction RL v8 |
-| `run_contradiction_rl_v9.sh` | Contradiction RL v9 |
-| `run_contradiction_rl_v10.sh` | Contradiction RL v10 |
-| `run_contradiction_rl_v11.sh` | Contradiction RL v11 |
-| `run_contradiction_rl_v12.sh` | Contradiction RL v12 |
+| `run_contradiction_rl_v12.sh` | Contradiction RL v12 (latest) |
+| `run_discovery_rl_v5.sh` | Discovery RL v5 (latest) |
+| `run_1900_rl.sh` | Full 1900 RL pipeline (d34 → CLM → v3 SFT → contradiction RL) |
 | `run_1905_rl.sh` | 1905 RL pipeline |
 | `run_math_rl.sh` | Math RL (GSM8K + MATH) |
-| `run_intuitor_rl.sh` | Intuitor RL |
-| `run_generated_physics_rl.sh` | Generated physics RL |
-| **Eval & Misc** | |
+| `run_intuitor_rl.sh` | Intuitor RL (self-certainty reward) |
+| `run_openthoughts_rl.sh` | OpenThoughts verifiable RL (SymPy equivalence) |
+| **Pretraining** | |
+| `run_pre1915_7b_fsdp.sh` | Pre-1915 7B (FSDP, latest large-scale run) |
+| **Eval** | |
 | `run_physics_eval.sh` | Physics evaluation |
-| `run_reasoning_pipeline.sh` | Reasoning pipeline |
-| `run_reasoning_traces.sh` | Reasoning trace generation |
-| `run_llm_clean.sh` | LLM-based data cleaning |
-| `speedrun.sh` | GPT-2 speedrun |
-| `miniseries.sh` | Miniseries training |
-| `scaling_laws.sh` | Scaling law experiments |
-| `profile_d52_memory.sh` | Memory profiling |
-| `runcpu.sh` | CPU-only training |
+
+Archived scripts in `runs/archive/` (older experiment versions preserved for reproducibility):
+- Pretraining: `run_pre1900*.sh`, `run_pre1905*.sh`, `run_pre1915_d40.sh`, `run_pre1915_d42.sh`, `run_1900_1964*.sh`
+- Physics CLM: `run_physics_clm_d34*.sh`
+- SFT: `run_pre1900_sft.sh`, `run_reasoning_sft.sh` through `v4.sh`, `run_sft_stages2_4.sh`, `run_generated_physics_sft.sh`
+- RL: `run_discovery_rl.sh` through `v4.sh`, `run_contradiction_rl_v5.sh` through `v11.sh`, `run_pre1900_rl.sh`, `run_generated_physics_rl.sh`
+- Misc: `speedrun.sh`, `miniseries.sh`, `scaling_laws.sh`, `runcpu.sh`, `profile_d52_memory.sh`, `run_reasoning_pipeline.sh`, `run_reasoning_traces.sh`, `run_llm_clean.sh`
