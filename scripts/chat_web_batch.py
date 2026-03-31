@@ -165,7 +165,7 @@ app.add_middleware(
 )
 
 # API key authentication middleware
-OPEN_PATHS = {"/", "/logo.svg", "/health"}
+OPEN_PATHS = {"/", "/logo.svg", "/health", "/stats"}
 
 class AuthMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
