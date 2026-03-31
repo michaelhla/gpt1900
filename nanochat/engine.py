@@ -248,23 +248,9 @@ class Engine:
                 # On <|assistant_end|> or <|bos|>, mark the row as completed
                 if next_token == assistant_end or next_token == bos:
                     state.completed = True
-                # Handle tool logic
-                if next_token == python_start:
-                    state.in_python_block = True
-                    state.python_expr_tokens = []
-                elif next_token == python_end and state.in_python_block:
-                    state.in_python_block = False
-                    if state.python_expr_tokens:
-                        expr = self.tokenizer.decode(state.python_expr_tokens)
-                        result = use_calculator(expr)
-                        if result is not None:
-                            result_tokens = self.tokenizer.encode(str(result))
-                            state.forced_tokens.append(output_start)
-                            state.forced_tokens.extend(result_tokens)
-                            state.forced_tokens.append(output_end)
-                    state.python_expr_tokens = []
-                elif state.in_python_block:
-                    state.python_expr_tokens.append(next_token)
+                # Tool logic disabled — calculator eval() is a security risk
+                # Model may still generate python_start/python_end tokens,
+                # but they pass through as normal tokens without execution
 
             # Yield the token column
             yield token_column, token_masks

@@ -39,8 +39,9 @@ import asyncio
 import logging
 import random
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
 from fastapi.responses import StreamingResponse, HTMLResponse, FileResponse
 from pydantic import BaseModel
 from typing import List, Optional, AsyncGenerator
@@ -74,6 +75,7 @@ parser.add_argument('-p', '--port', type=int, default=8000, help='Port to run th
 parser.add_argument('-d', '--dtype', type=str, default='bfloat16', choices=['float32', 'bfloat16'])
 parser.add_argument('--device-type', type=str, default='', choices=['cuda', 'cpu', 'mps'], help='Device type for evaluation: cuda|cpu|mps. empty => autodetect')
 parser.add_argument('--host', type=str, default='0.0.0.0', help='Host to bind the server to')
+parser.add_argument('--api-key', type=str, default=os.environ.get('BACKEND_API_KEY', ''), help='API key for authentication (default: $BACKEND_API_KEY)')
 def _default_log_db():
     """Use NVMe storage if available (cloud GPUs), otherwise current directory."""
     for nvme in ["/opt/dlami/nvme", "/workspace", "/mnt/nvme", "/local_nvme"]:
@@ -251,6 +253,20 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# API key authentication middleware
+OPEN_PATHS = {"/", "/logo.svg", "/health"}
+
+class AuthMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        if not args.api_key or request.url.path in OPEN_PATHS:
+            return await call_next(request)
+        auth = request.headers.get("authorization", "")
+        if auth != f"Bearer {args.api_key}":
+            return Response("Unauthorized", status_code=401)
+        return await call_next(request)
+
+app.add_middleware(AuthMiddleware)
 
 @app.get("/")
 async def root():

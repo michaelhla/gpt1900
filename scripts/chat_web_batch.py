@@ -28,8 +28,9 @@ import asyncio
 import logging
 import uuid
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
 from fastapi.responses import StreamingResponse, HTMLResponse, FileResponse
 from pydantic import BaseModel
 from typing import List, Optional, AsyncGenerator
@@ -62,6 +63,7 @@ parser.add_argument('-g', '--model-tag', type=str, default=None, help='Model tag
 parser.add_argument('-s', '--step', type=int, default=None, help='Step to load')
 parser.add_argument('-p', '--port', type=int, default=8001, help='Port')
 parser.add_argument('--host', type=str, default='0.0.0.0', help='Host')
+parser.add_argument('--api-key', type=str, default=os.environ.get('BACKEND_API_KEY', ''), help='API key for authentication (default: $BACKEND_API_KEY)')
 parser.add_argument('--max-batch', type=int, default=64, help='Max concurrent requests per GPU')
 parser.add_argument('-d', '--dtype', type=str, default='bfloat16', choices=['float32', 'bfloat16'])
 args = parser.parse_args()
@@ -149,6 +151,20 @@ app.add_middleware(
     allow_origins=["*"], allow_credentials=True,
     allow_methods=["*"], allow_headers=["*"],
 )
+
+# API key authentication middleware
+OPEN_PATHS = {"/", "/logo.svg", "/health"}
+
+class AuthMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        if not args.api_key or request.url.path in OPEN_PATHS:
+            return await call_next(request)
+        auth = request.headers.get("authorization", "")
+        if auth != f"Bearer {args.api_key}":
+            return Response("Unauthorized", status_code=401)
+        return await call_next(request)
+
+app.add_middleware(AuthMiddleware)
 
 
 @app.get("/")
