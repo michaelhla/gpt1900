@@ -531,6 +531,7 @@ def main():
     parser.add_argument("--num-gpus", type=int, default=1, help="Number of GPUs for generation (default: 1)")
     parser.add_argument("--temperature", type=float, default=0.7, help="Sampling temperature (default: 0.7)")
     parser.add_argument("--top-k", type=int, default=50, help="Top-k sampling (default: 50)")
+    parser.add_argument("--eval-config", default=None, help="Path to eval config JSON (default: EVAL.json in repo root)")
     args = parser.parse_args()
 
     os.makedirs(args.output_dir, exist_ok=True)
@@ -538,7 +539,7 @@ def main():
     os.makedirs(cache_dir, exist_ok=True)
 
     # Load eval config
-    eval_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "EVAL.json")
+    eval_path = args.eval_config or os.path.join(os.path.dirname(os.path.dirname(__file__)), "EVAL.json")
     with open(eval_path) as f:
         eval_config = json.load(f)
     tasks = eval_config["tasks"]

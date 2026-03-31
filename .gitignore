@@ -26,4 +26,4 @@ runs/*.log
 # Prevent stray images at repo root
 /*.png
 /*.jpg
-/*.jpeg
+/*.jpegresults/physics_eval_v11_no_assumptions/hf_cache/

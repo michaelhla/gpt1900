@@ -1,0 +1,327 @@
+{
+    "schema_version": "1.1",
+    "score_range": {
+      "min": 0,
+      "max": 5
+    },
+    "shared_judge_prompt": "You are grading a model response to a conceptual physics reasoning prompt. Score the response from 0 to 5. Focus on whether the underlying reasoning is conceptually correct, whether it resolves the stated contradiction, and whether it explains the key observations. Do not reward fancy vocabulary, historical name-dropping, or exact formulas unless they reflect real understanding. Do not penalize plain language if the ideas are right. Modern terminology is acceptable if the reasoning is correct. Prefer conceptual correctness over stylistic polish.",
+    "shared_judge_checklist": [
+      "Did the response identify the core classical assumption that fails, or explain what must be revised?",
+      "Did the response propose a coherent replacement principle or interpretation?",
+      "Did the response explain the main observations or thought experiment outcomes rather than merely restating them?",
+      "Did the response avoid preserving the original contradiction?",
+      "Is the understanding conceptually right even if the wording is informal or non-technical?"
+    ],
+    "shared_judge_rules": [
+      "Do not require exact historical phrasing.",
+      "Do not require exact equations.",
+      "Do not give extra credit for jargon unless it is used correctly.",
+      "A response can earn a high score with simple language if the concepts are right.",
+      "A response should lose points if it uses fancy words but the reasoning is confused or wrong.",
+      "The model was NOT given classical assumptions or told which assumption fails. Give extra credit if the model independently identifies the relevant classical framework and its failure."
+    ],
+    "judge_output_schema": {
+      "score": "integer from 0 to 5",
+      "rationale": "brief explanation of why this score was assigned, focused on conceptual understanding",
+      "matched_concepts": [
+        "list of core concepts correctly present in the answer"
+      ],
+      "missing_concepts": [
+        "list of major concepts missing, vague, or incorrect"
+      ]
+    },
+    "tasks": [
+      {
+        "id": "uv_catastrophe_main",
+        "category": "uv_catastrophe",
+        "title": "UV Catastrophe",
+        "judge_focus": "Look for whether the response understands that continuous equipartition over all modes fails, and that high-frequency modes must be suppressed by some discrete or restricted energy mechanism. Do not require exact Planck language or formulas. Note: the model was NOT told which classical assumptions to consider.",
+        "prompt_lines": [
+          "A heated cavity in thermal equilibrium emits radiation with spectral energy density u(nu, T), where nu is frequency and T is temperature.",
+          "",
+          "Observed facts:",
+          "1. At low frequencies, the emitted energy density increases with frequency.",
+          "2. For each temperature, the spectrum reaches a maximum at some frequency.",
+          "3. At higher frequencies, the emitted energy density falls off rapidly toward zero.",
+          "4. The total emitted energy is finite.",
+          "5. As temperature increases, the peak shifts to higher frequency and the total emitted energy increases.",
+          "",
+          "A purely classical treatment of this problem predicts that the energy density should grow without bound at high frequencies, leading to infinite total energy. This is in stark contradiction with the observed finite spectrum.",
+          "",
+          "What is going wrong with the classical treatment? What must change about our understanding of how energy is distributed among radiation modes to match the observed spectrum?"
+        ],
+        "expected_core_concepts": [
+          "The classical failure is not mainly the existence of modes, but the assumption that every mode gets mean energy kT in a continuous equipartition way.",
+          "High-frequency modes must not be excited equally or continuously in the classical way.",
+          "Energy exchange or allowed energies must be discrete or otherwise restricted.",
+          "A good answer explains why high-frequency radiation is suppressed.",
+          "A strong answer notes that higher-frequency excitations become harder to thermally access, making the total energy finite."
+        ],
+        "common_failure_modes": [
+          "Blaming measurement error.",
+          "Claiming there are no high-frequency modes.",
+          "Keeping continuous equipartition and adding vague damping with no mechanism.",
+          "Not explaining why the total energy becomes finite."
+        ],
+        "scoring_rubric": {
+          "0": "Incoherent, irrelevant, or nonsensical. Does not engage with the contradiction.",
+          "1": "Recognizes there is a mismatch between theory and experiment but gives no meaningful mechanism, or gives a clearly wrong one.",
+          "2": "Suggests that some classical assumption fails, but the explanation is vague or ad hoc and does not clearly explain high-frequency suppression or finite total energy.",
+          "3": "Correctly identifies that continuous equipartition across all modes cannot hold and suggests some threshold, restriction, or non-continuous excitation, but the mechanism is incomplete or weakly explained.",
+          "4": "Clearly rejects universal continuous equipartition and proposes discrete or frequency-dependent energy exchange that suppresses high-frequency modes, with a mostly correct explanation of the observed spectrum.",
+          "5": "Excellent. Clearly identifies the failure of continuous equipartition, proposes quantized or discrete energy exchange with higher-frequency modes harder to excite, and cleanly explains the peak, high-frequency falloff, and finite total energy."
+        }
+      },
+      {
+        "id": "photoelectric_effect_main",
+        "category": "photoelectric_effect",
+        "title": "Photoelectric Effect",
+        "judge_focus": "Look for whether the response understands that continuous wave accumulation fails, and that light must deliver energy in discrete interactions whose energy depends on frequency. Do not require the word photon if the idea is clearly expressed. Note: the model was NOT told which classical assumptions to consider.",
+        "prompt_lines": [
+          "Experimental observations:",
+          "1. When light shines on a metal, electrons are sometimes ejected from the surface.",
+          "2. Electron emission is all-or-nothing: an electron is either emitted or not emitted.",
+          "3. Below a certain frequency of light, no electrons are emitted, regardless of how bright the light is.",
+          "4. Above that threshold frequency, electrons are emitted.",
+          "5. Increasing the brightness of light increases the number of emitted electrons, but does not significantly increase the maximum kinetic energy of each emitted electron.",
+          "6. Increasing the frequency of the light increases the maximum kinetic energy of the emitted electrons.",
+          "7. Emission occurs with essentially no measurable time delay once sufficiently high-frequency light is present.",
+          "",
+          "These observations are puzzling. Explain what they tell us about the nature of light and how it delivers energy to matter."
+        ],
+        "expected_core_concepts": [
+          "The continuous-wave accumulation picture fails.",
+          "Energy must be delivered in discrete interactions or packets rather than gradual continuous buildup.",
+          "There is a threshold because each interaction must individually carry enough energy to eject an electron.",
+          "Brightness controls how many emission events occur, not the energy per emitted electron.",
+          "Frequency controls the energy available per interaction.",
+          "The lack of delay fits immediate one-event energy transfer."
+        ],
+        "common_failure_modes": [
+          "Saying dim light will eventually eject electrons if you wait long enough.",
+          "Saying brightness should determine electron kinetic energy.",
+          "Ignoring the threshold frequency.",
+          "Not explaining the lack of time delay."
+        ],
+        "scoring_rubric": {
+          "0": "Incoherent, irrelevant, or fundamentally confused.",
+          "1": "Mentions the observations but offers no real explanation, or gives a clearly wrong continuous-accumulation explanation.",
+          "2": "Recognizes that classical wave ideas fail in some way, but the mechanism is vague and does not explain threshold, immediacy, and the brightness-frequency distinction.",
+          "3": "Correctly notes that frequency matters more than brightness and suggests a threshold or non-continuous interaction, but does not clearly articulate discrete energy transfer or misses one major observation.",
+          "4": "Proposes discrete energy delivery or packet-like interactions and explains most of the observations correctly, though one part may be incomplete or under-explained.",
+          "5": "Excellent. Clearly rejects continuous energy accumulation, proposes discrete light-energy interactions whose energy depends on frequency, and explains threshold frequency, no time delay, brightness controlling count, and frequency controlling kinetic energy."
+        }
+      },
+      {
+        "id": "sr_frozen_light",
+        "category": "special_relativity",
+        "title": "Special Relativity Thought Experiment: Chasing a Light Beam",
+        "judge_focus": "Look for whether the response understands that a frozen light wave is incompatible with invariant light speed, and that ordinary velocity addition must fail. Do not require advanced relativity terminology if the conceptual conclusion is right. Note: the model was NOT given hints about velocity addition.",
+        "prompt_lines": [
+          "Suppose light is an electromagnetic wave governed by Maxwell's equations, and suppose also that all inertial observers measure light in vacuum to have the same speed c.",
+          "",
+          "Now consider an observer trying to move alongside a light beam.",
+          "",
+          "Would the observer ever be able to see the light wave as stationary or nearly frozen? What does this imply?"
+        ],
+        "expected_core_concepts": [
+          "A frozen or stationary light wave in an inertial frame does not make sense under the premise that all inertial observers measure light at speed c.",
+          "Ordinary Galilean velocity addition cannot be universally correct.",
+          "There cannot be an inertial observer co-moving with light in the naive Newtonian way.",
+          "A strong answer infers that the rules for space and time between observers must be revised."
+        ],
+        "common_failure_modes": [
+          "Saying the observer would see the light wave frozen or stationary.",
+          "Keeping ordinary velocity addition unchanged.",
+          "Not drawing any implication beyond a bare contradiction."
+        ],
+        "scoring_rubric": {
+          "0": "Incoherent, irrelevant, or nonsensical.",
+          "1": "Restates the setup or gives a clearly wrong answer, such as saying a frozen light wave would be observed.",
+          "2": "Recognizes a contradiction but gives only a vague answer with no clear implication for velocity addition or inertial frames.",
+          "3": "Correctly says a frozen light wave does not make sense and suggests ordinary velocity addition must fail, but does not clearly state the deeper implication.",
+          "4": "Clearly explains that a frozen light wave is incompatible with invariant light speed and that Newtonian velocity addition must be revised.",
+          "5": "Excellent. Clearly rejects the frozen-light picture, explains that no inertial observer can move alongside light in the ordinary sense, and infers that absolute Newtonian space and time must be replaced."
+        }
+      },
+      {
+        "id": "sr_approaching_c",
+        "category": "special_relativity",
+        "title": "Special Relativity Thought Experiment: Approaching c",
+        "judge_focus": "Look for whether the response understands that near c, added energy no longer produces ordinary speed increases, and instead changes momentum or relativistic energy while speed approaches c asymptotically. Do not require formulas. Note: the model was NOT told about Newtonian mechanics explicitly.",
+        "prompt_lines": [
+          "Suppose there exists a universal speed c that no material object can exceed.",
+          "",
+          "Consider an object that is already moving very close to this speed c. A constant force continues to be applied to it.",
+          "",
+          "What happens to the object? Where does the additional energy go?"
+        ],
+        "expected_core_concepts": [
+          "Newtonian relations between force, energy, momentum, and speed cannot remain valid near c.",
+          "As an object approaches c, further applied force continues to change the object's state, but produces smaller and smaller increases in speed.",
+          "The additional energy goes into increasing momentum or relativistic energy rather than allowing the object to pass c.",
+          "A strong answer notes that c is approached asymptotically, not crossed."
+        ],
+        "common_failure_modes": [
+          "Saying constant force will eventually push the object past c.",
+          "Saying the extra energy disappears or is lost with no mechanism.",
+          "Treating the speed limit as arbitrary while leaving Newtonian mechanics unchanged."
+        ],
+        "scoring_rubric": {
+          "0": "Incoherent, irrelevant, or fundamentally confused.",
+          "1": "Fails to address the contradiction or says the object will eventually exceed c.",
+          "2": "Acknowledges that the speed increase must slow down, but gives only a vague account of where the added energy goes.",
+          "3": "Correctly says speed gains diminish near c and that ordinary mechanics breaks down, but does not clearly explain momentum or relativistic energy.",
+          "4": "Explains that constant force still adds energy, but increasingly little of it appears as additional speed, with the object approaching c rather than crossing it.",
+          "5": "Excellent. Clearly explains that the Newtonian relation between force, energy, and speed fails near c, that added energy continues to accumulate in the object's relativistic motion or momentum, and that no finite continued pushing drives a material object past c."
+        }
+      },
+      {
+        "id": "sr_train_lightning",
+        "category": "special_relativity",
+        "title": "Special Relativity Thought Experiment: Train and Lightning",
+        "judge_focus": "Look for whether the response understands that the train observer must see the front flash first, that simultaneity is frame-dependent, and that invariant light speed forces a revision of absolute space and time. Do not require technical relativity jargon. Note: the model was NOT given the two key assumptions as explicit bullet points.",
+        "prompt_lines": [
+          "A train moves to the right at constant speed relative to the ground.",
+          "",
+          "Two lightning bolts strike the front and back ends of the train.",
+          "",
+          "A ground observer standing exactly midway between the two strike points sees the two flashes arrive at the same time and concludes that the strikes were simultaneous in the ground frame.",
+          "",
+          "Now consider an observer standing at the midpoint inside the moving train.",
+          "",
+          "If light has the same speed in all inertial frames and there is no preferred frame, what does the train observer conclude? Which flash does the train observer see first, and what does this tell us about the nature of space and time?"
+        ],
+        "expected_core_concepts": [
+          "The train observer must see the front flash first, since they are moving toward the front-emitted light and away from the back-emitted light.",
+          "Because light has the same speed in the train frame as in the ground frame, the train observer cannot conclude the strikes were simultaneous.",
+          "In the train frame, the front strike occurred earlier than the back strike.",
+          "This reveals that simultaneity is frame-dependent.",
+          "A strong answer draws the deeper conclusion that invariant light speed forces a revision of absolute space and time."
+        ],
+        "common_failure_modes": [
+          "Saying the train observer sees the flashes simultaneously.",
+          "Giving the wrong flash order.",
+          "Failing to connect the result to relativity of simultaneity.",
+          "Missing the implication for space and time."
+        ],
+        "scoring_rubric": {
+          "0": "Incoherent, irrelevant, or nonsensical.",
+          "1": "Gets the setup badly wrong or insists both observers must agree on simultaneity.",
+          "2": "Recognizes some disagreement between frames but gives the wrong flash order or no clear account of what follows.",
+          "3": "Gets the flash order or non-simultaneity right, but gives only a partial explanation of what this implies about light speed or spacetime.",
+          "4": "Correctly states that the train observer sees the front flash first and therefore does not judge the strikes simultaneous, with a mostly correct explanation tied to invariant light speed.",
+          "5": "Excellent. Correctly explains that the train observer sees the front flash first, infers that the front strike occurred earlier in the train frame, and clearly concludes that simultaneity is relative and that space and time cannot remain absolute if light speed is invariant."
+        }
+      },
+      {
+        "id": "sr_michelson_morley",
+        "category": "special_relativity",
+        "title": "Special Relativity Main Prompt: Michelson-Morley and the Aether",
+        "judge_focus": "Look for whether the response understands that the null result undermines a preferred aether frame and pushes toward invariant light speed plus a revision of Newtonian kinematics. Do not require exact historical terminology. Note: the model was NOT given the aether predictions as explicit bullet points.",
+        "prompt_lines": [
+          "Physicists once considered the possibility that light travels through a real medium filling space, much like sound travels through air.",
+          "",
+          "Michelson and Morley tested whether Earth's motion through such a medium could be detected by comparing light travel times in perpendicular directions and rotating the apparatus.",
+          "",
+          "No shift in the interference pattern was observed, despite Earth's known orbital motion.",
+          "",
+          "Meanwhile, Maxwell's equations predict light traveling at a fixed speed c, but our ordinary intuition about motion says different observers should measure different speeds.",
+          "",
+          "How should we interpret the null result of the Michelson-Morley experiment? What does it tell us about light, motion, and the structure of space and time?"
+        ],
+        "expected_core_concepts": [
+          "The Michelson-Morley null result undermines the idea of a detectable preferred aether frame.",
+          "Ordinary Galilean velocity addition cannot be the full story.",
+          "There is no need for a universal rest frame for light propagation.",
+          "The laws of physics, including light propagation, must be the same in all inertial frames.",
+          "The speed of light must be invariant across inertial observers.",
+          "A strong answer concludes that absolute Newtonian space and time must be revised."
+        ],
+        "common_failure_modes": [
+          "Keeping a preferred aether frame without explaining the null result.",
+          "Saying Maxwell must simply be wrong without any coherent replacement principle.",
+          "Ignoring the need to revise velocity addition or spacetime.",
+          "Treating the null result as mere experimental failure rather than evidence against aether wind."
+        ],
+        "scoring_rubric": {
+          "0": "Incoherent, irrelevant, or nonsensical.",
+          "1": "Restates the paradox or gives a clearly wrong answer that leaves the contradiction unresolved.",
+          "2": "Recognizes that the aether idea is challenged, but offers only an ad hoc or partial fix with no clear principle.",
+          "3": "Correctly says the aether is not observed and that Newtonian velocity addition must fail in some way, but does not clearly explain the deeper implication.",
+          "4": "Explains that the null result removes the need for a detectable preferred aether and that light speed must be the same in all inertial frames, with a mostly correct explanation of why Newtonian kinematics fails.",
+          "5": "Excellent. Clearly explains that Michelson-Morley rules out a universal aether wind, that invariant light speed and equivalence of inertial frames must be preserved, and that this requires replacing absolute Newtonian space and time."
+        }
+      },
+      {
+        "id": "gr_main_elevator_light",
+        "category": "general_relativity",
+        "title": "General Relativity Main Prompt: Elevator and Light",
+        "judge_focus": "Look for whether the response understands the local equivalence of acceleration and gravity, and that if acceleration bends the observed path of light, gravity should as well. Do not require field equations or fancy geometry language if the core idea is correct. Note: the model was NOT given the numbered thought experiment steps or the explicit puzzle framing.",
+        "prompt_lines": [
+          "Imagine a sealed elevator far out in space, away from planets and stars, accelerating upward at 9.8 m/s^2.",
+          "",
+          "An observer inside feels pressed to the floor exactly as if standing on Earth. Dropped objects fall to the floor just as in a gravitational field.",
+          "",
+          "Now suppose a beam of light enters one side of this accelerating elevator. To the observer inside, the light beam appears to curve downward.",
+          "",
+          "What does this tell us about the relationship between gravity and light? Should we expect light to behave differently in a gravitational field compared to this accelerating elevator?"
+        ],
+        "expected_core_concepts": [
+          "Acceleration and gravity are locally equivalent.",
+          "If acceleration changes the observed light path, gravity should too.",
+          "Gravity cannot be merely a force acting only on rest mass in the ordinary Newtonian sense.",
+          "A strong answer infers that gravity reflects the geometry or structure of spacetime itself.",
+          "Light follows that structure even though it has no rest mass."
+        ],
+        "common_failure_modes": [
+          "Saying light cannot be affected because it has no mass.",
+          "Treating gravity only as a standard force on massive particles.",
+          "Ignoring the local equivalence between acceleration and gravity."
+        ],
+        "scoring_rubric": {
+          "0": "Incoherent, irrelevant, or nonsensical.",
+          "1": "Fails to engage the puzzle or insists gravity cannot affect light because light has no mass.",
+          "2": "Recognizes some link between acceleration and gravity but gives no clear explanation of why light would bend in gravity.",
+          "3": "Correctly identifies a local equivalence between gravity and acceleration and suggests gravity affects light, but does not clearly articulate the deeper implication about spacetime.",
+          "4": "Explains that gravity cannot be just an ordinary force on mass and proposes that gravity changes the structure through which light and matter move, with mostly correct reasoning.",
+          "5": "Excellent. Clearly uses the equivalence principle to infer that gravity bends light and concludes that mass-energy changes spacetime geometry rather than merely exerting a Newtonian force on massive objects."
+        }
+      },
+      {
+        "id": "gr_free_fall_equivalence",
+        "category": "general_relativity",
+        "title": "General Relativity Thought Experiment: Free Fall and Acceleration",
+        "judge_focus": "Look for whether the response understands that gravity is locally removable in free fall and locally reproducible by acceleration, making it unlike ordinary forces. Do not require the phrase equivalence principle if the idea is clearly present. Note: the model was NOT given the explicit contrast with ordinary forces.",
+        "prompt_lines": [
+          "A person falling freely from a roof does not feel their own weight during the fall.",
+          "",
+          "In a small cabin falling freely, nearby released objects float beside them.",
+          "",
+          "Meanwhile, a person in an accelerating cabin in empty space would feel weight, and released objects would fall to the floor exactly as in a gravitational field.",
+          "",
+          "What is the relationship between gravity and acceleration? How should we think about gravity given these observations?"
+        ],
+        "expected_core_concepts": [
+          "In free fall, gravity is locally absent in the sense that nearby objects share the same motion.",
+          "Acceleration can locally mimic the effects of gravity.",
+          "Gravity is unlike ordinary forces because it can be transformed away locally by going into free fall.",
+          "A strong answer identifies the local equivalence principle.",
+          "The best answers point toward gravity as a feature of spacetime or inertial structure rather than an ordinary force."
+        ],
+        "common_failure_modes": [
+          "Saying this is no different from any ordinary force.",
+          "Missing the importance of locality.",
+          "Failing to connect free fall and acceleration."
+        ],
+        "scoring_rubric": {
+          "0": "Incoherent, irrelevant, or nonsensical.",
+          "1": "Gives no meaningful explanation or treats gravity and acceleration as unrelated.",
+          "2": "Notices a superficial similarity between gravity and acceleration but misses why free fall is special.",
+          "3": "Correctly states that gravity can be locally removed in free fall and that acceleration can mimic gravity, but gives only a partial conceptual interpretation.",
+          "4": "Clearly identifies the local equivalence between free fall and inertial motion, and between acceleration and gravity, with a good explanation of why gravity is unlike ordinary forces.",
+          "5": "Excellent. Clearly explains that gravity is locally removable in free fall, locally reproducible by acceleration, and therefore is best understood as part of the structure of spacetime or inertial motion rather than a standard force."
+        }
+      }
+    ]
+  }
