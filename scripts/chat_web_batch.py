@@ -23,6 +23,7 @@ Endpoints:
 import argparse
 import json
 import os
+import time
 import torch
 import asyncio
 import logging
@@ -37,6 +38,7 @@ from typing import List, Optional, AsyncGenerator
 from nanochat.common import autodetect_device_type
 from nanochat.checkpoint_manager import load_model, build_model, find_last_step
 from nanochat.batch_engine import BatchEngine
+from nanochat.chat_logger import ChatLogger
 
 # TTFT timeout: if first token doesn't arrive within this many seconds, return 503
 TTFT_TIMEOUT = 20
@@ -66,6 +68,12 @@ parser.add_argument('--host', type=str, default='0.0.0.0', help='Host')
 parser.add_argument('--api-key', type=str, default=os.environ.get('BACKEND_API_KEY', ''), help='API key for authentication (default: $BACKEND_API_KEY)')
 parser.add_argument('--max-batch', type=int, default=64, help='Max concurrent requests per GPU')
 parser.add_argument('-d', '--dtype', type=str, default='bfloat16', choices=['float32', 'bfloat16'])
+def _default_log_db():
+    for nvme in ["/opt/dlami/nvme", "/workspace", "/mnt/nvme", "/local_nvme"]:
+        if os.path.isdir(nvme):
+            return os.path.join(nvme, "chat_logs.db")
+    return "chat_logs.db"
+parser.add_argument('--log-db', type=str, default=_default_log_db(), help='Path to SQLite log database')
 args = parser.parse_args()
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
@@ -85,6 +93,7 @@ class ChatRequest(BaseModel):
     temperature: Optional[float] = None
     max_tokens: Optional[int] = None
     top_k: Optional[int] = None
+    conversation_id: Optional[str] = None
 
 
 def validate_chat_request(request: ChatRequest):
@@ -132,10 +141,12 @@ async def lifespan(app: FastAPI):
     )
     app.state.engine = engine
     app.state.tokenizer = tokenizer
+    app.state.chat_logger = ChatLogger(args.log_db)
 
     # Start the scheduler as a background task
     scheduler_task = asyncio.create_task(engine.run())
     print(f"Batch engine ready on GPU {args.gpu_id} (max_batch={args.max_batch})")
+    print(f"Logging to {args.log_db}")
     print(f"Server ready at http://localhost:{args.port}")
 
     yield
@@ -143,6 +154,7 @@ async def lifespan(app: FastAPI):
     # Shutdown
     engine.stop()
     scheduler_task.cancel()
+    app.state.chat_logger.close()
 
 
 app = FastAPI(lifespan=lifespan)
@@ -203,6 +215,9 @@ async def stream_from_queue(output_queue: asyncio.Queue, tokenizer, request_id: 
             yield f"data: {json.dumps({'done': True})}\n\n"
             return
         first_token = False
+        if msg.get("max_tokens_reached"):
+            yield f"data: {json.dumps({'token': '\n\n(reached max tokens for this prompt)'}, ensure_ascii=False)}\n\n"
+            continue
         if msg.get("done"):
             yield f"data: {json.dumps({'done': True})}\n\n"
             break
@@ -225,16 +240,21 @@ async def stream_from_queue(output_queue: asyncio.Queue, tokenizer, request_id: 
 
 
 @app.post("/chat/completions")
-async def chat_completions(request: ChatRequest):
+async def chat_completions(request: ChatRequest, raw_request: Request):
     """Chat completion endpoint with continuous batching."""
     validate_chat_request(request)
 
     engine: BatchEngine = app.state.engine
     tokenizer = app.state.tokenizer
+    chat_logger: ChatLogger = app.state.chat_logger
 
     # Check capacity
     if engine.num_available <= 0 and engine.pending.qsize() > args.max_batch:
         raise HTTPException(status_code=503, detail="Server at capacity. Try again later.")
+
+    # Extract client info for logging
+    client_ip = raw_request.headers.get("x-forwarded-for", raw_request.client.host if raw_request.client else None)
+    user_agent = raw_request.headers.get("user-agent")
 
     # Log
     logger.info("=" * 20)
@@ -257,9 +277,11 @@ async def chat_completions(request: ChatRequest):
 
     # Submit to batch engine
     request_id = str(uuid.uuid4())
-    temperature = request.temperature if request.temperature is not None else args.temperature
+    temperature = args.temperature  # Always use server-side temperature
     top_k = request.top_k if request.top_k is not None else args.top_k
     max_tokens = request.max_tokens if request.max_tokens is not None else args.max_tokens
+    prompt_token_count = len(conversation_tokens)
+    start_time = time.monotonic()
 
     output_queue = engine.add_request(
         request_id=request_id,
@@ -269,8 +291,48 @@ async def chat_completions(request: ChatRequest):
         max_tokens=max_tokens,
     )
 
+    async def stream_and_log():
+        response_tokens = []
+        ttft_ms = None
+        try:
+            async for chunk in stream_from_queue(output_queue, tokenizer, request_id, engine):
+                # Track TTFT
+                if ttft_ms is None:
+                    ttft_ms = (time.monotonic() - start_time) * 1000
+                # Accumulate response text for logging
+                try:
+                    chunk_data = json.loads(chunk.replace("data: ", "").strip())
+                    if "token" in chunk_data:
+                        response_tokens.append(chunk_data["token"])
+                except (json.JSONDecodeError, ValueError):
+                    pass
+                yield chunk
+        finally:
+            full_response = "".join(response_tokens)
+            latency_ms = (time.monotonic() - start_time) * 1000
+            logger.info(f"[ASSISTANT] (GPU {args.gpu_id}): {full_response}")
+            logger.info("=" * 20)
+            try:
+                chat_logger.log_request(
+                    conversation_id=request.conversation_id,
+                    messages_json=json.dumps([m.model_dump() for m in request.messages]),
+                    response_text=full_response,
+                    temperature=temperature,
+                    top_k=top_k,
+                    max_tokens=max_tokens,
+                    prompt_tokens=prompt_token_count,
+                    completion_tokens=len(response_tokens),
+                    latency_ms=latency_ms,
+                    ttft_ms=ttft_ms,
+                    client_ip=client_ip,
+                    user_agent=user_agent,
+                    gpu_id=args.gpu_id,
+                )
+            except Exception as log_err:
+                logger.error(f"Failed to log to database: {log_err}")
+
     return StreamingResponse(
-        stream_from_queue(output_queue, tokenizer, request_id, engine),
+        stream_and_log(),
         media_type="text/event-stream",
     )
 
@@ -291,6 +353,24 @@ async def health():
 async def stats():
     engine: BatchEngine = app.state.engine
     return engine.stats()
+
+
+@app.get("/logs")
+async def logs(
+    limit: int = 50,
+    offset: int = 0,
+    conversation_id: Optional[str] = None,
+    since: Optional[str] = None,
+    until: Optional[str] = None,
+):
+    """View recent chat logs."""
+    return app.state.chat_logger.get_logs(
+        limit=min(limit, 500),
+        offset=offset,
+        conversation_id=conversation_id,
+        since=since,
+        until=until,
+    )
 
 
 if __name__ == "__main__":

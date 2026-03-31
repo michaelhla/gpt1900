@@ -40,6 +40,7 @@ class ChatLogger:
                 prompt_tokens INTEGER,
                 completion_tokens INTEGER,
                 latency_ms REAL,
+                ttft_ms REAL,
                 client_ip TEXT,
                 user_agent TEXT,
                 gpu_id INTEGER,
@@ -50,18 +51,26 @@ class ChatLogger:
         self.conn.execute("CREATE INDEX IF NOT EXISTS idx_conversation_id ON chat_logs(conversation_id)")
         self.conn.execute("CREATE INDEX IF NOT EXISTS idx_timestamp ON chat_logs(timestamp)")
         self.conn.commit()
+        self._migrate()
+
+    def _migrate(self):
+        """Add columns that may be missing from older databases."""
+        existing = {row[1] for row in self.conn.execute("PRAGMA table_info(chat_logs)")}
+        if "ttft_ms" not in existing:
+            self.conn.execute("ALTER TABLE chat_logs ADD COLUMN ttft_ms REAL")
+            self.conn.commit()
 
     def log_request(self, *, conversation_id=None, messages_json="[]",
                     response_text="", temperature=None, top_k=None,
                     max_tokens=None, prompt_tokens=None, completion_tokens=None,
-                    latency_ms=None, client_ip=None, user_agent=None,
+                    latency_ms=None, ttft_ms=None, client_ip=None, user_agent=None,
                     gpu_id=None, error=None):
         self.conn.execute(
             """INSERT INTO chat_logs
                (timestamp, conversation_id, messages_json, response_text,
                 temperature, top_k, max_tokens, prompt_tokens, completion_tokens,
-                latency_ms, client_ip, user_agent, gpu_id, error)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                latency_ms, ttft_ms, client_ip, user_agent, gpu_id, error)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (
                 datetime.now(timezone.utc).isoformat(),
                 conversation_id,
@@ -73,6 +82,7 @@ class ChatLogger:
                 prompt_tokens,
                 completion_tokens,
                 latency_ms,
+                ttft_ms,
                 client_ip,
                 user_agent,
                 gpu_id,

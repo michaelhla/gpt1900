@@ -151,9 +151,19 @@ class BatchEngine:
         self.dtype = dtype
         self.max_batch = max_batch
 
-        # Stop tokens
-        self.assistant_end = tokenizer.encode_special("<|assistant_end|>")
-        self.bos = tokenizer.get_bos_token_id()
+        # Stop tokens — any special token should terminate generation
+        self.stop_tokens = {
+            tokenizer.get_bos_token_id(),
+            tokenizer.encode_special("<|user_start|>"),
+            tokenizer.encode_special("<|user_end|>"),
+            tokenizer.encode_special("<|assistant_start|>"),
+            tokenizer.encode_special("<|assistant_end|>"),
+            tokenizer.encode_special("<|python_start|>"),
+            tokenizer.encode_special("<|python_end|>"),
+            tokenizer.encode_special("<|output_start|>"),
+            tokenizer.encode_special("<|output_end|>"),
+        }
+        self.stop_tokens.discard(None)  # in case any special token doesn't exist
 
         # RNG for sampling
         self.rng = torch.Generator(device=device)
@@ -228,7 +238,7 @@ class BatchEngine:
         first_token = sample_next_token(last_logits, self.rng, temperature, top_k)
 
         # Create request state
-        is_done = (first_token == self.assistant_end or first_token == self.bos)
+        is_done = first_token in self.stop_tokens
         req = RequestState(
             request_id=request_id,
             batch_idx=batch_idx,
@@ -278,13 +288,12 @@ class BatchEngine:
             req.last_token = token
             req.tokens_generated += 1
 
-            is_done = (
-                token == self.assistant_end or
-                token == self.bos or
-                req.tokens_generated >= req.max_tokens
-            )
-            if is_done:
+            hit_stop = token in self.stop_tokens
+            hit_limit = req.tokens_generated >= req.max_tokens
+            if hit_stop or hit_limit:
                 req.completed = True
+                if hit_limit and not hit_stop:
+                    req.output_queue.put_nowait({"max_tokens_reached": True})
                 req.output_queue.put_nowait({"done": True})
             else:
                 req.output_queue.put_nowait({"token_id": token})
