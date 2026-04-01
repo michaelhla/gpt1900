@@ -14,6 +14,14 @@
   <a href="https://x.com/hla_michael"><img src="https://img.shields.io/badge/Twitter-@hla__michael-1DA1F2?logo=twitter&style=social" alt="Twitter"></a>
 </p>
 
+## Key Resources
+
+- **Eval prompts**: [`EVAL.json`](EVAL.json) (with classical assumptions) · [`EVAL_no_assumptions.json`](EVAL_no_assumptions.json) (without)
+- **Generations**:
+  - [Best generations (v11)](results/physics_eval_v11/best_generations.md) · [all generations](results/physics_eval_v11/generations.json) · [judged results](results/physics_eval_v11/results_judged.json)
+  - [No-assumptions variant](results/physics_eval_v11_no_assumptions/generations.json) · [rephrased prompts](results/physics_eval_v11_rephrase/generations.json) · [replication](results/physics_eval_v11_replication/generations.json)
+  - [Base model, no SFT RL (v6)](results/physics_eval_v6/generations.json)
+
 ## Chat with GPT-1900
 
 Requires Python 3.10+ and [uv](https://docs.astral.sh/uv/):
