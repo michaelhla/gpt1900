@@ -21,6 +21,7 @@
   - [Best generations (v11)](results/physics_eval_v11/best_generations.md) · [all generations](results/physics_eval_v11/generations.json) · [judged results](results/physics_eval_v11/results_judged.json)
   - [No-assumptions variant](results/physics_eval_v11_no_assumptions/generations.json) · [rephrased prompts](results/physics_eval_v11_rephrase/generations.json) · [replication](results/physics_eval_v11_replication/generations.json)
   - [Base model, no SFT RL (v6)](results/physics_eval_v6/generations.json)
+  - [Gallery of funny failures](results/gallery_of_funny_failures.md) — curated highlights across all runs
 
 ## Chat with GPT-1900
 
