@@ -1,7 +1,7 @@
 # GPT-1900
 
 <p align="center">
-  <img src="figures/machina_mirabilis.png" width="700" alt="Machina Mirabilis">
+  <img src="figures/gpt1900_banner.png" width="700" alt="GPT-1900">
 </p>
 
 <p align="center">
