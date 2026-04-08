@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>GPT-1900</title>
+    <link rel="icon" type="image/png" sizes="96x96" href="/icon.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/icon.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&family=IM+Fell+English:ital@0;1&family=Special+Elite&display=swap" rel="stylesheet">
@@ -102,7 +104,7 @@
             font-family: 'Cormorant Garamond', 'Georgia', serif;
             font-size: 1.9rem;
             font-weight: 600;
-            color: var(--dark-brown);
+            color: var(--ink);
             letter-spacing: 0.03em;
             margin-bottom: 0.3rem;
         }
@@ -111,17 +113,26 @@
             font-family: 'Cormorant Garamond', 'Georgia', serif;
             font-style: italic;
             font-size: 1.05rem;
-            color: var(--brown);
+            color: var(--dark-brown);
             margin-bottom: 0.6rem;
         }
 
         .welcome-description {
             font-family: 'Cormorant Garamond', 'Georgia', serif;
             font-size: 1rem;
-            color: var(--brown);
-            opacity: 0.65;
+            color: var(--dark-brown);
+            opacity: 0.85;
             max-width: 36rem;
             line-height: 1.6;
+        }
+
+        .welcome-hint {
+            font-family: 'Cormorant Garamond', 'Georgia', serif;
+            font-size: 0.9rem;
+            color: var(--dark-brown);
+            opacity: 0.55;
+            margin-top: 0.5rem;
+            font-style: italic;
         }
 
         /* ── Chat header (shown during chat) ────────── */
@@ -529,219 +540,19 @@
 
     <!-- ── Chat Interface ───────────────────────── -->
     <div class="chat-view welcome-active" id="chatView">
-        <div class="chat-nav" id="chatNav">
-            <span class="chat-nav-title" onclick="clearConversation()" style="cursor:pointer;">GPT-1900</span>
-            <div class="chat-nav-actions">
-                <button class="nav-btn" onclick="clearConversation()" title="New conversation">
-                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M12 5v14"/><path d="M5 12h14"/>
-                    </svg>
-                </button>
-                <button class="nav-btn" onclick="toggleInfo()" title="What is this?">?</button>
-            </div>
-        </div>
         <div class="chat-container welcome-state" id="chatContainer">
             <div class="chat-wrapper" id="chatWrapper">
                 <div class="welcome-content" id="welcomeContent">
                     <img src="/icon.png" alt="GPT-1900" class="welcome-logo">
-                    <div class="welcome-title">GPT-1900</div>
+                    <div class="welcome-title">GPT-1900 (BETA)</div>
                     <div class="welcome-description">A language model trained exclusively on text from before 1900 — books, newspapers, letters, and scholarship from the nineteenth century and earlier.</div>
+                    <div class="welcome-description" style="margin-top: 1.5rem; padding: 1rem 1.25rem; border: 2px solid var(--red-accent); border-radius: 0.5rem; background: rgba(139,37,0,0.06); color: var(--red-accent); font-weight: 500;">Thank you for using GPT-1900! The model has been moved to <a href="https://huggingface.co/collections/mhla/gpt-1900" target="_blank" style="color: var(--red-accent); text-decoration: underline; font-weight: 600;">Hugging Face</a> due to high hosting costs.</div>
                 </div>
             </div>
-        </div>
-
-        <div class="input-area">
-            <div class="input-wrapper">
-                <div class="input-field-wrap">
-                    <div class="placeholder-roller" id="placeholderRoller"><span></span></div>
-                    <textarea
-                        id="chatInput"
-                        class="chat-input"
-                        placeholder=""
-                        rows="1"
-                        onkeydown="handleKeyDown(event)"
-                    ></textarea>
-                </div>
-                <button id="sendButton" class="send-btn" onclick="sendMessage()" disabled>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M5 12h14"/>
-                        <path d="M12 5l7 7-7 7"/>
-                    </svg>
-                </button>
-            </div>
-            <div class="input-footer">Research preview only. Views expressed by GPT-1900 do not reflect those of its authors.</div>
-        </div>
-    </div>
-
-    <!-- ── Info Modal ─────────────────────────── -->
-    <div class="info-overlay" id="infoOverlay" onclick="toggleInfo()">
-        <div class="info-modal" onclick="event.stopPropagation()">
-            <img src="/icon.png" alt="GPT-1900" class="info-modal-logo">
-            <div class="info-modal-title">GPT-1900</div>
-            <div class="info-modal-body">
-                GPT-1900 is an experimental language model trained exclusively on text published before the year 1900 — books, newspapers, letters, and scholarship from the nineteenth century and earlier.<br><br>
-                Its responses reflect the knowledge, language, and perspectives of that era. It does not know about modern events, technology, or cultural developments.
-            </div>
-            <button class="info-modal-close" onclick="toggleInfo()">Close</button>
         </div>
     </div>
 
     <script>
-        const chatContainer = document.getElementById('chatContainer');
-        const chatWrapper = document.getElementById('chatWrapper');
-        const chatInput = document.getElementById('chatInput');
-        const sendButton = document.getElementById('sendButton');
-        const chatNav = document.getElementById('chatNav');
-        const infoOverlay = document.getElementById('infoOverlay');
-
-        let messages = [];
-        let conversationId = crypto.randomUUID();
-        let isGenerating = false;
-        let currentTemperature = 0.8;
-        let currentTopK = 50;
-
-        function saveSession() {
-            sessionStorage.setItem('gpt1900_messages', JSON.stringify(messages));
-        }
-
-        function loadSession() {
-            try {
-                const saved = sessionStorage.getItem('gpt1900_messages');
-                if (saved) {
-                    messages = JSON.parse(saved);
-                    if (messages.length > 0) {
-                        hideWelcome();
-                        messages.forEach(m => addMessage(m.role, m.content));
-                    }
-                }
-            } catch (e) { /* ignore corrupt data */ }
-        }
-
-        /* ── Info modal ─────────────────────────── */
-
-        function clearConversation() {
-            messages = [];
-            conversationId = crypto.randomUUID();
-            sessionStorage.removeItem('gpt1900_messages');
-            showWelcome();
-        }
-
-        function toggleInfo() {
-            infoOverlay.classList.toggle('visible');
-        }
-
-        /* ── Welcome screen ──────────────────────── */
-
-        function showWelcome() {
-            chatWrapper.innerHTML = `
-                <div class="welcome-content" id="welcomeContent">
-                    <img src="/icon.png" alt="GPT-1900" class="welcome-logo">
-                    <div class="welcome-title">GPT-1900</div>
-                    <div class="welcome-description">A language model trained exclusively on text from before 1900 — books, newspapers, letters, and scholarship from the nineteenth century and earlier.</div>
-                </div>
-            `;
-            chatContainer.classList.add('welcome-state');
-            document.getElementById('chatView').classList.add('welcome-active');
-            chatNav.classList.remove('visible');
-            startPlaceholderCycle();
-            startIdleAnimation();
-            const existingNotice = document.querySelector('.single-turn-notice');
-            if (existingNotice) existingNotice.remove();
-        }
-
-        function showSingleTurnNotice() {
-            if (document.querySelector('.single-turn-notice')) return;
-            const notice = document.createElement('div');
-            notice.className = 'single-turn-notice';
-            notice.innerHTML = '<span>Single-turn only — each question is answered independently without context from previous messages.</span><button onclick="this.parentElement.remove()" title="Dismiss">&times;</button>';
-            const inputArea = document.querySelector('.input-area');
-            inputArea.parentElement.insertBefore(notice, inputArea);
-        }
-
-        function hideWelcome() {
-            const welcome = document.getElementById('welcomeContent');
-            if (welcome) {
-                chatWrapper.innerHTML = '';
-                chatContainer.classList.remove('welcome-state');
-                document.getElementById('chatView').classList.remove('welcome-active');
-                chatNav.classList.add('visible');
-                stopPlaceholderCycle();
-                stopIdleAnimation();
-                showSingleTurnNotice();
-            }
-        }
-
-        /* ── Cycling placeholder questions ───────── */
-
-        const sampleQuestions = [
-            'Explain the properties of the luminiferous aether.',
-            'What are Newton\'s laws of motion?',
-            'Describe Maxwell\'s theory of electromagnetism.',
-            'What experiments has Mr. Faraday conducted?',
-            'How does the telegraph operate?',
-            'What is the nature of heat and thermodynamics?',
-            'Tell me about the expansion of the American railways.',
-            'What is Mr. Darwin\'s theory of natural selection?',
-            'Describe the political situation in Europe.',
-            'What do we know of the planet Mars?',
-            'How is steel manufactured by the Bessemer process?',
-            'What are the causes of cholera?',
-            'Tell me about the works of Mr. Dickens.',
-            'What is the kinetic theory of gases?',
-            'Describe the French Revolution and its consequences.',
-            'What progress has been made in electrical lighting?',
-            'Explain Lord Kelvin\'s views on the age of the Earth.',
-            'What are the latest astronomical observations?',
-        ];
-
-        let placeholderIndex = 0;
-        let placeholderInterval = null;
-        const roller = document.getElementById('placeholderRoller');
-        const rollerSpan = roller.querySelector('span');
-
-        function setRollerText(text) {
-            rollerSpan.textContent = text;
-        }
-
-        function cyclePlaceholder() {
-            if (chatInput.value) return;
-            const nextIndex = (placeholderIndex + 1) % sampleQuestions.length;
-            // Slide current text up and out
-            rollerSpan.classList.add('slide-out');
-            setTimeout(() => {
-                // Prep new text below
-                rollerSpan.classList.remove('slide-out');
-                rollerSpan.classList.add('slide-in-prep');
-                setRollerText(sampleQuestions[nextIndex]);
-                // Force reflow then slide in
-                rollerSpan.offsetHeight;
-                rollerSpan.classList.remove('slide-in-prep');
-            }, 600);
-            placeholderIndex = nextIndex;
-        }
-
-        function updateRollerVisibility() {
-            roller.style.display = chatInput.value ? 'none' : '';
-        }
-
-        function startPlaceholderCycle() {
-            placeholderIndex = Math.floor(Math.random() * sampleQuestions.length);
-            setRollerText(sampleQuestions[placeholderIndex]);
-            roller.style.display = '';
-            rollerSpan.className = '';
-            if (placeholderInterval) clearInterval(placeholderInterval);
-            placeholderInterval = setInterval(cyclePlaceholder, 8000);
-        }
-
-        function stopPlaceholderCycle() {
-            if (placeholderInterval) {
-                clearInterval(placeholderInterval);
-                placeholderInterval = null;
-            }
-            setRollerText('What would you ask someone from 1900?');
-            rollerSpan.className = '';
-        }
-
         /* ── Welcome idle states ─────────────────── */
 
         let idleTimeout = null;
@@ -762,322 +573,23 @@
             if (!idleActive) return;
             const logo = document.querySelector('.welcome-logo');
             if (!logo) return;
-            // Pick a random idle state
             const state = idleStates[Math.floor(Math.random() * idleStates.length)];
             logo.src = state;
-            // Hold for 3 seconds, then go back to normal
             idleTimeout = setTimeout(() => {
                 if (!idleActive) return;
                 logo.src = '/icon.png';
-                // Wait 3 seconds before next idle
                 idleTimeout = setTimeout(idleLoop, 3000);
             }, 3000);
         }
 
         function startIdleAnimation() {
             idleActive = true;
-            // First idle after 3 seconds
             idleTimeout = setTimeout(idleLoop, 3000);
         }
 
-        function stopIdleAnimation() {
-            idleActive = false;
-            if (idleTimeout) {
-                clearTimeout(idleTimeout);
-                idleTimeout = null;
-            }
-            const logo = document.querySelector('.welcome-logo');
-            if (logo) logo.src = '/icon.png';
-        }
-
-        /* ── Chat icon state management ─────────── */
-
-        function setChatIcon(src) {
-            const icon = chatWrapper.querySelector('.trailing-icon');
-            if (icon) icon.src = src;
-        }
-
-        startPlaceholderCycle();
-
-        /* ── Input handling ───────────────────────── */
-
-        chatInput.addEventListener('input', function() {
-            this.style.height = 'auto';
-            this.style.height = Math.min(this.scrollHeight, 180) + 'px';
-            sendButton.disabled = !this.value.trim() || isGenerating;
-            updateRollerVisibility();
-        });
-
-        function handleKeyDown(event) {
-            if (event.key === 'Enter' && !event.shiftKey) {
-                event.preventDefault();
-                sendMessage();
-            }
-        }
-
-        /* ── Messages ─────────────────────────────── */
-
-        let talkingTimeout = null;
-        let isTalking = false;
-
-        const talkFrames = [
-            // [src, scaleY, scaleX, baseDuration]
-            // A = closed, B = mid, C = wide
-            ['/icon.png',         1,    1,     200],  // A
-            ['/icon-talking.png', 0.98, 1.01,  140],  // B
-            ['/icon-open.png',    0.96, 1.02,  170],  // C
-            ['/icon-talking.png', 0.98, 1.01,  140],  // B
-            ['/icon.png',         1,    1,     200],  // A
-        ];
-
-        // Occasional variations: skip to C, hold A longer, double B
-        const talkPatterns = [
-            [0,1,2,3,4],         // A B C B A (standard)
-            [0,1,2,3,4,4],       // A B C B A A (pause)
-            [0,1,2,1,4],         // A B C B A (standard)
-            [0,1,0,1,2,3,4],     // A B A B C B A (stutter)
-            [0,1,2,2,3,4],       // A B C C B A (hold open)
-        ];
-
-        function runTalkFrame(icon, pattern, idx) {
-            if (!isTalking) return;
-            const frameIdx = pattern[idx % pattern.length];
-            const [src, sy, sx, baseDur] = talkFrames[frameIdx];
-            icon.src = src;
-            icon.style.transform = `scaleY(${sy}) scaleX(${sx})`;
-            // Add ±20ms randomness
-            const dur = baseDur + Math.floor(Math.random() * 40) - 20;
-            const nextIdx = idx + 1;
-            // Pick a new random pattern when current one completes
-            if (nextIdx >= pattern.length) {
-                const newPattern = talkPatterns[Math.floor(Math.random() * talkPatterns.length)];
-                talkingTimeout = setTimeout(() => runTalkFrame(icon, newPattern, 0), dur);
-            } else {
-                talkingTimeout = setTimeout(() => runTalkFrame(icon, pattern, nextIdx), dur);
-            }
-        }
-
-        function startTalkingAnimation() {
-            const icon = chatWrapper.querySelector('.trailing-icon');
-            if (!icon) return;
-            isTalking = true;
-            const pattern = talkPatterns[Math.floor(Math.random() * talkPatterns.length)];
-            runTalkFrame(icon, pattern, 0);
-        }
-
-        function stopTalkingAnimation() {
-            isTalking = false;
-            if (talkingTimeout) {
-                clearTimeout(talkingTimeout);
-                talkingTimeout = null;
-            }
-            const icon = chatWrapper.querySelector('.trailing-icon');
-            if (icon) {
-                icon.src = '/icon.png';
-                icon.style.transform = '';
-            }
-        }
-
-        function moveTrailingIcon() {
-            // Remove any existing trailing icon
-            const existing = chatWrapper.querySelector('.trailing-icon');
-            if (existing) existing.remove();
-            // Add icon after the last assistant message
-            const assistantMsgs = chatWrapper.querySelectorAll('.message.assistant');
-            if (assistantMsgs.length > 0) {
-                const last = assistantMsgs[assistantMsgs.length - 1];
-                const icon = document.createElement('img');
-                icon.className = 'trailing-icon';
-                icon.src = '/icon.png';
-                icon.alt = '';
-                last.after(icon);
-            }
-        }
-
-        function addMessage(role, content, messageIndex) {
-            const messageDiv = document.createElement('div');
-            messageDiv.className = `message ${role}`;
-
-            const contentDiv = document.createElement('div');
-            contentDiv.className = 'message-content';
-            contentDiv.textContent = content;
-
-            messageDiv.appendChild(contentDiv);
-            chatWrapper.appendChild(messageDiv);
-
-            if (role === 'assistant') {
-                moveTrailingIcon();
-            }
-
-            chatContainer.scrollTop = chatContainer.scrollHeight;
-            return contentDiv;
-        }
-
-        /* ── Streaming generation ─────────────────── */
-
-        async function generateAssistantResponse() {
-            isGenerating = true;
-            sendButton.disabled = true;
-
-            const assistantContent = addMessage('assistant', '');
-            assistantContent.innerHTML = '<span class="typing-indicator"><span></span><span></span><span></span></span>';
-            setChatIcon('/icon-thinking.png');
-
-            try {
-                const response = await fetch('/api/chat', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        messages: messages,
-                        temperature: currentTemperature,
-                        max_tokens: 512,
-                        top_k: currentTopK,
-                        conversation_id: conversationId,
-                    }),
-                });
-
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}`);
-                }
-
-                const reader = response.body.getReader();
-                const decoder = new TextDecoder();
-                let fullResponse = '';
-                let started = false;
-                let sseBuffer = '';
-
-                while (true) {
-                    const { done, value } = await reader.read();
-                    if (done) break;
-
-                    sseBuffer += decoder.decode(value, { stream: true });
-                    const events = sseBuffer.split('\n\n');
-                    // Last element may be incomplete — keep it in the buffer
-                    sseBuffer = events.pop();
-
-                    for (const event of events) {
-                        const line = event.trim();
-                        if (!line.startsWith('data: ')) continue;
-                        const data = JSON.parse(line.slice(6));
-
-                        if (data.token) {
-                            if (!started) {
-                                assistantContent.textContent = '';
-                                started = true;
-                                startTalkingAnimation();
-                            }
-                            fullResponse += data.token;
-                            assistantContent.textContent = fullResponse;
-                            chatContainer.scrollTop = chatContainer.scrollHeight;
-                        }
-
-                        if (data.error) {
-                            throw new Error(data.error);
-                        }
-                    }
-                }
-
-                const idx = messages.length;
-                messages.push({ role: 'assistant', content: fullResponse });
-                saveSession();
-                setChatIcon('/icon.png');
-
-            } catch (error) {
-                const errorMsg = 'GPT-1900 is busy, please try again later.';
-                assistantContent.innerHTML = `<div class="error-message">${errorMsg}</div>`;
-                messages.push({ role: 'assistant', content: errorMsg });
-                saveSession();
-                const errorIcons = ['/icon-sleep.png', '/icon-newspaper.png'];
-                setChatIcon(errorIcons[Math.floor(Math.random() * errorIcons.length)]);
-            } finally {
-                isGenerating = false;
-                sendButton.disabled = !chatInput.value.trim();
-                stopTalkingAnimation();
-            }
-        }
-
-        /* ── Slash commands ───────────────────────── */
-
-        function handleSlashCommand(command) {
-            const parts = command.trim().split(/\s+/);
-            const cmd = parts[0].toLowerCase();
-            const arg = parts[1];
-
-            if (cmd === '/temperature') {
-                if (arg === undefined) {
-                    addMessage('console', `Current temperature: ${currentTemperature}`);
-                } else {
-                    const temp = parseFloat(arg);
-                    if (isNaN(temp) || temp < 0 || temp > 2) {
-                        addMessage('console', 'Temperature must be between 0.0 and 2.0');
-                    } else {
-                        currentTemperature = temp;
-                        addMessage('console', `Temperature set to ${currentTemperature}`);
-                    }
-                }
-                return true;
-            } else if (cmd === '/topk') {
-                if (arg === undefined) {
-                    addMessage('console', `Current top-k: ${currentTopK}`);
-                } else {
-                    const topk = parseInt(arg);
-                    if (isNaN(topk) || topk < 1 || topk > 200) {
-                        addMessage('console', 'Top-k must be between 1 and 200');
-                    } else {
-                        currentTopK = topk;
-                        addMessage('console', `Top-k set to ${currentTopK}`);
-                    }
-                }
-                return true;
-            } else if (cmd === '/clear') {
-                messages = [];
-                conversationId = crypto.randomUUID();
-                sessionStorage.removeItem('gpt1900_messages');
-                showWelcome();
-                return true;
-            } else if (cmd === '/help') {
-                addMessage('console',
-                    'Commands:\n' +
-                    '/temperature [value]  Set sampling temperature (0\u20132)\n' +
-                    '/topk [value]         Set top-k filtering (1\u2013200)\n' +
-                    '/clear                Clear conversation\n' +
-                    '/help                 Show this message'
-                );
-                return true;
-            }
-            return false;
-        }
-
-        /* ── Send ─────────────────────────────────── */
-
-        async function sendMessage() {
-            const message = chatInput.value.trim();
-            if (!message || isGenerating) return;
-
-            if (message.startsWith('/')) {
-                chatInput.value = '';
-                chatInput.style.height = 'auto';
-                handleSlashCommand(message);
-                return;
-            }
-
-            chatInput.value = '';
-            chatInput.style.height = 'auto';
-
-            hideWelcome();
-
-            const idx = messages.length;
-            messages.push({ role: 'user', content: message });
-            saveSession();
-            addMessage('user', message, idx);
-
-            await generateAssistantResponse();
-        }
-
-        loadSession();
         if (document.querySelector('.welcome-logo')) startIdleAnimation();
-        chatInput.focus();
-        sendButton.disabled = false;
     </script>
+    <script defer src="/_vercel/insights/script.js"></script>
+    <script defer src="/_vercel/speed-insights/script.js"></script>
 </body>
 </html>
