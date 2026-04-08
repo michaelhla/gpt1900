@@ -64,7 +64,11 @@
       "Bash(cp monocleman_talking.png deploy/vercel/public/icon-talking.png)",
       "Bash(git mv:*)",
       "Bash(curl -s \"https://huggingface.co/api/models?author=mhla&search=gpt1915\")",
-      "Bash(curl -s \"https://huggingface.co/api/models?author=mhla&search=gpt1964\")"
+      "Bash(curl -s \"https://huggingface.co/api/models?author=mhla&search=gpt1964\")",
+      "Bash(aws sts:*)",
+      "Bash(git commit:*)",
+      "Bash(pip list:*)",
+      "Bash(~/.pyenv/versions/3.12.6/bin/python3.12 dev/generate_banner.py)"
     ]
   }
 }

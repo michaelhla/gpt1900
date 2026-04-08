@@ -40,6 +40,10 @@ bash runs/chat.sh
 bash runs/chat.sh -r mhla/gpt1900-d34-contradiction-rl-v11
 ```
 
+**Note on generation parameters:** You may need to play with temperature to get good results. The chat default is `0.6`; the physics eval uses `0.7` with `top_k=50`.
+
+**Note on RL models:** All of the RL'd model checkpoints (`-rl-*`) were trained with physics reasoning rewards and should only be expected to perform well on physics prompts. For general conversation, use the SFT model (the default).
+
 ## License
 
 MIT
