@@ -1,0 +1,115 @@
+\documentclass[10pt,a4paper]{article}
+\usepackage[margin=22mm]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage{amsmath}
+\usepackage{booktabs,tabularx,array}
+\usepackage{xurl}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{fancyhdr}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{5pt}
+\setlength{\emergencystretch}{2em}
+\renewcommand{\arraystretch}{1.18}
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0pt}
+\fancyfoot[C]{\small October 2026 archival edition\enspace\textbullet\enspace\thepage}
+\renewcommand{\refname}{References and source locations}
+
+\hypersetup{pdftitle={Machina Mirabilis (GPT-1900)},pdfauthor={Michael Hla},pdfsubject={Can a Language Model Trained on Pre-1900 Text Rediscover Modern Physics?}}
+
+\begin{document}
+\begin{center}
+{\LARGE\bfseries Machina Mirabilis (GPT-1900)\par}
+\vspace{6pt}
+{\large Can a Language Model Trained on Pre-1900 Text Rediscover Modern Physics?\par}
+\vspace{9pt}
+Michael Hla\par
+\vspace{3pt}
+Original public release: March 2026\par
+Archival edition prepared: 5 October 2026
+\end{center}
+\begin{abstract}
+Machina Mirabilis (GPT-1900) investigates whether a language model trained from scratch on historical text can generate conceptually useful explanations of observations associated with later developments in physics. The project reports a 3.3-billion-parameter transformer and approximately 22 billion tokens of filtered pre-1900 text, followed by physics midtraining, synthetic instruction tuning, and reinforcement learning with a modern language-model judge. Eight prompts probe blackbody radiation, the photoelectric effect, and thought experiments associated with relativity. Selected generations suggest discrete energy transfer or relationships between gravity and acceleration, but performance is inconsistent and often physically incorrect. Modern-model supervision, residual contamination risk, supplied experimental framing, and checkpoint selection limit conclusions about independent rediscovery. This report consolidates the original public methods and archived evaluation outputs; it reports no new training or experiments.
+\end{abstract}
+{\footnotesize\textbf{Archival note.} Originally released publicly in March 2026. This archival technical-report edition was prepared on 5 October 2026 from the public project record. The original release date is distinct from the intended October 2026 archival deposit. No Zenodo deposit or DOI registration has been completed for this edition; the actual deposit date will be recorded when publication occurs.\par}
+\section{Objective and scope}
+The project uses a nominal cutoff of 1 January 1900 to study scientific generalization under restricted historical knowledge. The target is conceptual explanation, not a mathematical derivation of quantum mechanics or general relativity. The model receives curated observations and, in several tasks, candidate classical assumptions to challenge. Producing a plausible phrase under these conditions is a weaker result than independently choosing an experiment, discovering an anomaly, and deriving a predictive theory. \cite{ref1,ref3}
+
+\section{Historical corpus and base model}
+The public release describes three main pretraining sources: Institutional Books, British Library books, and American Stories newspapers. Filtering uses publication metadata, OCR-quality screening, and keywords associated with later physics. Documents containing terms such as Einstein were discarded. A token-frequency log-prior filter, attributed in the original article to Seo and colleagues, uses mean GPT-2 token log-priors to reject unusually noisy or repetitive documents. These are mitigation procedures, not proof of complete temporal decontamination. \cite{ref1}
+
+The resulting corpus is reported as approximately 22 billion tokens. A 3.3-billion-parameter model was trained using a fork of nanochat. The article also quotes about 5.5 x 10\textasciicircum{}20 FLOPs and an 11:1 token-to-parameter ratio. Those quantities are not reconciled in the public account: 22/3.3 is about 6.7, so the ratio must not be presented as derivable from the stated unique-corpus size. This report retains the corpus and model sizes and leaves total token exposure and compute accounting unresolved. \cite{ref1,ref2}
+
+\section{Adaptation and the temporal boundary}
+Physics midtraining draws on more than 2,600 books, journals, and treatises from Project Gutenberg, Wikisource, and the Internet Archive. The article reports about 290 million tokens, including works by Maxwell, Newton, and Faraday. It describes this stage as the last intended to avoid modern-model supervision. Publication metadata and filtering still do not exclude modern forewords or annotations: the project notes describe finding a translator's foreword mentioning later physics. \cite{ref1}
+
+\medskip\noindent{\small\textbf{Table 1. Training stages and limits of the historical knowledge restriction.}}\par\smallskip
+{\small
+\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X@{}}
+\toprule
+\textbf{Stage} & \textbf{Reported material or mechanism} & \textbf{Interpretive boundary} \\
+\midrule
+Pretraining & \textasciitilde{}22B filtered historical tokens; \textasciitilde{}3.3B parameters & Nominal pre-1900 corpus; residual leakage unquantified \\
+Physics midtraining & \textasciitilde{}290M tokens; >2,600 historical works & Historical source selection is not a leakage guarantee \\
+Instruction tuning & \textasciitilde{}53,000 instruction pairs; \textasciitilde{}30M tokens & Modern LLM-generated responses, filtered afterward \\
+Contradiction RL & Modern LLM constructs problems; Sonnet 4 judges responses & Modern knowledge can enter through data and reward \\
+\bottomrule
+\end{tabularx}
+}\par\medskip
+Instruction pairs were synthesized by providing historical excerpts to a modern language model, including some multiturn interactions. Forward-looking examples and post-1900 keywords were filtered. The public account reports approximately 53,000 pairs and 30 million tokens. Filtering generated text cannot establish that modern conceptual knowledge was absent from the supervision. Results from this stage should be labeled separately from the raw base model. \cite{ref1}
+
+The most effective reported post-training strategy extracts a physical insight from an excerpt, frames it as a contradiction, and scores the response with an LLM judge. The article describes REINFORCE with token-level DAPO-style advantage normalization and format, coherence, and correctness rewards. The v11 registry records 284 contradiction problems, 24 epochs, a 2,048-token limit, and a fixed coherence weight of 0.25. Its chain passes through physics midtraining and physics instruction tuning before RL. These are v11-specific details, not settings for every GPT-1900 checkpoint. \cite{ref1,ref4}
+
+\section{Evaluation protocol}
+The released evaluation contains eight tasks: blackbody radiation, the photoelectric effect, chasing a light beam, approaching light speed, train/lightning simultaneity, Michelson-Morley, an accelerating elevator with light, and free-fall equivalence. The script uses task-specific 0-5 rubrics and a Claude Sonnet 4 judge. Documented generation defaults are temperature 0.7 and top-k 50; individual archived runs must be checked rather than assumed to use every default. \cite{ref2,ref3}
+
+Some prompts supply hindsight-rich structure or simplified thought experiments. The elevator task, for example, supplies a relationship between gravity and acceleration rather than requiring its unaided discovery. The prompts are preserved as experimental inputs; they should not be treated as a historically exact reconstruction of what a scientist knew in 1900. \cite{ref3}
+
+\section{Observations from the released record}
+The original article reports occasional responses consistent with discrete light-energy transfer and occasional rejection of unrestricted equipartition. It also reports ether-based explanations, erroneous special-relativity reasoning, verbosity, repetitive phrasing, and likely reward exploitation. Its conclusion is suggestive behavior without sufficient evidence for robust scientific intuition. \cite{ref1}
+
+Table 2 transcribes selected v11 evaluation rows, cross-checked against the archived judged JSON. Each standard row contains one saved sample for each of eight tasks. The task scores and means are judge ratings, not success probabilities. The stronger photoelectric and elevator examples occur at different checkpoints. \cite{ref5}
+
+\medskip\noindent{\small\textbf{Table 2. Selected archived v11 judge scores; one sample per task per checkpoint.}}\par\smallskip
+{\small
+\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X@{}}
+\toprule
+\textbf{v11 step} & \textbf{Photoelectric} & \textbf{Elevator / light} & \textbf{Mean over 8 tasks} \\
+\midrule
+560 & 2 / 5 & 2 / 5 & 1.25 / 5 \\
+630 & 3 / 5 & 3 / 5 & 1.25 / 5 \\
+735 & 2 / 5 & 2 / 5 & 1.25 / 5 \\
+770 & 4 / 5 & 1 / 5 & 1.125 / 5 \\
+\bottomrule
+\end{tabularx}
+}\par\medskip
+The registry highlights steps 560 and 630 at a mean of 1.25; the saved summary also gives step 735 the same mean. At step 770, a photoelectric score of 4 coexists with an elevator score of 1 and a lower overall mean. Selecting the maximum score from each task or checkpoint would overstate any single model's consistent capability. No uncertainty estimate or independent expert validation is established by these rows. \cite{ref4,ref5}
+
+The no-assumptions archive contains three samples per task for steps 560, 630, and 735. Its summary reports means of 1.04, 1.50, and 1.58, respectively. These differ in both prompt wording and sample count from the standard rows and therefore are not a controlled estimate of the causal effect of removing assumptions. The repository also preserves rephrased prompts, replication generations, and selected best generations. \cite{ref5}
+
+\section{Limitations and interpretation}
+The main limitations are incomplete temporal auditing, modern synthetic supervision, reward-model dependence, a small and repeatedly inspected evaluation set, sparse samples, and selection over checkpoints and outputs. The model is not shown to derive the quantitative laws of the target theories or to make independently validated novel predictions. Conversely, failure of this small, data-limited model does not establish that all language-model approaches fail at scientific discovery.
+
+Historical corpora also retain historical prejudice and uneven coverage. Modern general-language benchmarks may conflate capability with linguistic and temporal mismatch. The released model is useful as an inspectable research baseline, provided that base, instruction-tuned, and RL variants remain distinct and their provenance is reported. \cite{ref1,ref2}
+
+\section{Availability and archival provenance}
+Code, prompts, the checkpoint registry, and evaluation outputs are publicly linked from the project repository. Hugging Face identifiers include mhla/gpt1900-d34-22btok (base), mhla/gpt1900-instruct-v3-sft (instruction-tuned), and mhla/gpt1900-d34-contradiction-rl-v11 (physics RL). The general conversation and physics RL variants serve different purposes. This report does not establish a complete immutable corpus-to-checkpoint reproduction package. \cite{ref2,ref4,ref6}
+
+This archival edition is a concise reconstruction of the March 2026 public account, checked against public repository material available on 5 October 2026. It makes no claim that later repository contents were all present on the original release day. The source snapshot is identified below. Subsequent outside evaluations and references are recorded separately in the companion citation-evidence register to avoid presenting later work as part of the original experiment.
+
+For a new reproduction, record exact corpus manifests and hashes, sampling and document dates, tokenizer and model revisions, training exposure, random seeds, generation settings, checkpoint selection criteria, and the judge prompt and version. A stronger discovery test would preregister held-out problems, audit all stages for leakage, report all samples, and add blinded expert or mathematical verification. These are proposed validation steps, not completed results.
+
+\begin{thebibliography}{9}
+\small
+\bibitem{ref1} Michael Hla. Machina Mirabilis. Public project article, dated March 2026.\par\url{https://michaelhla.com/blog/machina-mirabilis.html}
+\bibitem{ref2} Michael Hla. GPT-1900 repository. Source snapshot 5b489c8c5378f6b1bf3e1ba782f56876f65cde7a.\par\url{https://github.com/michaelhla/gpt1900/tree/5b489c8c5378f6b1bf3e1ba782f56876f65cde7a}
+\bibitem{ref3} Michael Hla. EVAL.json and EVAL\_no\_assumptions.json; scripts/physics\_eval.py.\par\url{https://github.com/michaelhla/gpt1900/blob/5b489c8c5378f6b1bf3e1ba782f56876f65cde7a/EVAL.json}
+\bibitem{ref4} Michael Hla. GPT-1900 checkpoint registry, especially v11.\par\url{https://github.com/michaelhla/gpt1900/blob/5b489c8c5378f6b1bf3e1ba782f56876f65cde7a/CHECKPOINTS.md}
+\bibitem{ref5} Michael Hla. Standard, no-assumptions, rephrase, and replication evaluation archives.\par\url{https://github.com/michaelhla/gpt1900/tree/5b489c8c5378f6b1bf3e1ba782f56876f65cde7a/results}
+\bibitem{ref6} Michael Hla. GPT-1900 model and dataset collection.\par\url{https://huggingface.co/collections/mhla/gpt-1900}
+\end{thebibliography}
+\end{document}

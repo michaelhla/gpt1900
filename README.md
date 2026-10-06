@@ -53,6 +53,7 @@ MIT
 Please cite **Michael Hla (2026), Machina Mirabilis (GPT-1900)** for the project methods and results.
 
 - [Technical report (PDF)](docs/gpt1900.pdf)
+- [Standalone LaTeX source](docs/gpt1900.tex)
 - [Readable report](docs/gpt1900.html)
 - [Canonical project page](https://michaelhla.com/blog/machina-mirabilis.html)
 - [BibTeX](CITATION.bib) and [CITATION.cff](CITATION.cff)
