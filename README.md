@@ -47,3 +47,14 @@ bash runs/chat.sh -r mhla/gpt1900-d34-contradiction-rl-v11
 ## License
 
 MIT
+
+## Citation and archival report
+
+Please cite **Michael Hla (2026), Machina Mirabilis (GPT-1900)** for the project methods and results.
+
+- [Technical report (PDF)](docs/gpt1900.pdf)
+- [Readable report](docs/gpt1900.html)
+- [Canonical project page](https://michaelhla.com/blog/machina-mirabilis.html)
+- [BibTeX](CITATION.bib) and [CITATION.cff](CITATION.cff)
+
+Originally released March 2026; archival report prepared October 2026. Zenodo deposit and DOI are pending. See [archival provenance](docs/ARCHIVAL-NOTE.md).

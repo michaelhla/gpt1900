@@ -1,0 +1,28 @@
+{
+  "cff-version": "1.2.0",
+  "message": "For the project methods and results, please cite the archival technical report in preferred-citation. For an exact software revision, also cite the commit used.",
+  "type": "software",
+  "title": "GPT-1900",
+  "authors": [
+    {
+      "family-names": "Hla",
+      "given-names": "Michael"
+    }
+  ],
+  "url": "https://michaelhla.com/blog/machina-mirabilis.html",
+  "repository-code": "https://github.com/michaelhla/gpt1900",
+  "preferred-citation": {
+    "type": "report",
+    "title": "Machina Mirabilis (GPT-1900)",
+    "authors": [
+      {
+        "family-names": "Hla",
+        "given-names": "Michael"
+      }
+    ],
+    "year": 2026,
+    "month": 3,
+    "url": "https://michaelhla.com/blog/machina-mirabilis.html",
+    "notes": "Can a Language Model Trained on Pre-1900 Text Rediscover Modern Physics?. Original public release: March 2026; archival edition prepared October 2026; deposit pending."
+  }
+}
